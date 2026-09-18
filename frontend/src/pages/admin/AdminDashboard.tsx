@@ -27,6 +27,7 @@ import {
   ExternalLink,
   Award,
   Trophy,
+  Loader2,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -49,6 +50,36 @@ export const AdminDashboard: React.FC = () => {
   const [deleteTargetTeam, setDeleteTargetTeam] = useState<Team | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
+
+  // Export & Backup download loading states
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+
+  const handleExportExcel = async () => {
+    setIsExportingExcel(true);
+    try {
+      await api.downloadExcelReport();
+    } catch (err: any) {
+      console.error('Excel export failed:', err);
+      // Fallback to direct URL navigation with token query param
+      window.location.href = api.getExcelDownloadUrl();
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
+  const handleBackupSnapshot = async () => {
+    setIsBackingUp(true);
+    try {
+      await api.downloadDatabaseSnapshot();
+    } catch (err: any) {
+      console.error('Backup snapshot failed:', err);
+      // Fallback to direct URL navigation with token query param
+      window.location.href = api.getSnapshotDownloadUrl();
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
 
   // Load initial data
   const loadDashboardData = async () => {
@@ -427,23 +458,36 @@ export const AdminDashboard: React.FC = () => {
 
               {/* Export & Backup Buttons */}
               <div className="flex items-center space-x-2">
-                <a
-                  href={api.getExcelDownloadUrl()}
-                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors"
+                <button
+                  type="button"
+                  onClick={handleExportExcel}
+                  disabled={isExportingExcel}
+                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
+                  title="Download attendance Excel report"
                 >
-                  <Download className="w-4 h-4" />
-                  <span>Export to Excel (.xlsx)</span>
-                </a>
+                  {isExportingExcel ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  <span>{isExportingExcel ? 'Exporting...' : 'Export to Excel (.xlsx)'}</span>
+                </button>
 
                 {isSuperAdmin && (
-                  <a
-                    href={api.getSnapshotDownloadUrl()}
-                    className="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition-colors"
-                    title="Download complete JSON snapshot backup"
+                  <button
+                    type="button"
+                    onClick={handleBackupSnapshot}
+                    disabled={isBackingUp}
+                    className="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
+                    title="Download complete JSON database backup snapshot"
                   >
-                    <Database className="w-4 h-4" />
-                    <span>Backup Snapshot</span>
-                  </a>
+                    {isBackingUp ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Database className="w-4 h-4" />
+                    )}
+                    <span>{isBackingUp ? 'Backing up...' : 'Backup Snapshot'}</span>
+                  </button>
                 )}
               </div>
 

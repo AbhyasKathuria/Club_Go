@@ -195,7 +195,68 @@ export const api = {
     }),
   getLiveDashboard: () => request<any>('/attendance/live-dashboard'),
 
-  // Downloads
-  getExcelDownloadUrl: () => `${API_BASE}/export/excel`,
-  getSnapshotDownloadUrl: () => `${API_BASE}/backup/snapshot`,
+  // Downloads & Exports
+  getExcelDownloadUrl: (eventId?: string) => {
+    const token = getAuthToken();
+    const params = new URLSearchParams();
+    if (eventId) params.append('eventId', eventId);
+    if (token) params.append('token', token);
+    const qs = params.toString();
+    return `${API_BASE}/export/excel${qs ? `?${qs}` : ''}`;
+  },
+  getSnapshotDownloadUrl: () => {
+    const token = getAuthToken();
+    return token ? `${API_BASE}/backup/snapshot?token=${encodeURIComponent(token)}` : `${API_BASE}/backup/snapshot`;
+  },
+  downloadExcelReport: async (eventId?: string) => {
+    const token = getAuthToken();
+    const query = eventId ? `?eventId=${encodeURIComponent(eventId)}` : '';
+    const res = await fetch(`${API_BASE}/export/excel${query}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || `Excel export failed (HTTP ${res.status})`);
+    }
+    const blob = await res.blob();
+    const contentDisposition = res.headers.get('Content-Disposition');
+    let filename = `ClubGo_Attendance_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+  downloadDatabaseSnapshot: async () => {
+    const token = getAuthToken();
+    const res = await fetch(`${API_BASE}/backup/snapshot`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error || `Backup download failed (HTTP ${res.status})`);
+    }
+    const blob = await res.blob();
+    const contentDisposition = res.headers.get('Content-Disposition');
+    let filename = `clubgo_snapshot_${new Date().toISOString().slice(0, 10)}.json`;
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
 };

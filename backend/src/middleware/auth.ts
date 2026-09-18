@@ -29,7 +29,12 @@ export function generateToken(user: AuthUser): string {
 
 export function authenticateToken(req: AuthRequest, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  let token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+  // Fallback to query parameter ?token=... (for direct browser file downloads and exports)
+  if (!token && req.query.token && typeof req.query.token === 'string') {
+    token = req.query.token;
+  }
 
   if (!token) {
     res.status(401).json({ error: 'Authentication required. No token provided.' });

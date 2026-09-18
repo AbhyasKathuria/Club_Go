@@ -136,6 +136,7 @@ export async function generateAttendanceExcelReport(eventId?: string): Promise<E
 
   partsSheet.columns = [
     { header: 'Participant Name', key: 'name', width: 28 },
+    { header: 'Roll Number', key: 'roll_number', width: 20 },
     { header: 'University Email', key: 'email', width: 32 },
     { header: 'Phone', key: 'phone', width: 18 },
     { header: 'School', key: 'school', width: 14 },
@@ -155,6 +156,7 @@ export async function generateAttendanceExcelReport(eventId?: string): Promise<E
   participants.forEach((p) => {
     partsSheet.addRow({
       name: p.name,
+      roll_number: p.roll_number || 'N/A',
       email: p.university_email,
       phone: p.phone,
       school: p.team.school.code,

@@ -174,11 +174,14 @@ router.post('/', registrationRateLimiter, async (req, res, next) => {
           leader_phone: leaderPhone,
           participants: {
             create: data.participants.map((p, idx) => {
-              const pEmail = (p.universityEmail || p.university_email || p.email || '').trim().toLowerCase();
+              const personalEmail = (p.email || '').trim().toLowerCase();
+              const uniEmail = (p.universityEmail || p.university_email || '').trim().toLowerCase();
+              const pEmail = uniEmail || personalEmail || `member${idx + 1}_${teamToken.toLowerCase()}@pu.edu`;
               const pRoll = (p.rollNumber || p.roll_number || '').trim() || null;
               const pPhone = (p.phone || '').trim();
               const customData = {
                 ...(p.customFields || p.custom_fields || {}),
+                ...(personalEmail && personalEmail !== pEmail ? { personal_email: personalEmail } : {}),
                 ...(p.semester ? { semester: p.semester } : {}),
                 ...(p.section ? { section: p.section } : {}),
               };

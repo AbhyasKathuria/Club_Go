@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../config/database';
 import { authenticateToken, requireFacultyOrAdmin, requireSuperAdmin } from '../middleware/auth';
 import { uploadLogo, processSponsorLogo } from '../services/storageService';
-import { EventStatus } from '@prisma/client';
+import { EventStatus } from '../types/enums';
 
 const router = Router();
 

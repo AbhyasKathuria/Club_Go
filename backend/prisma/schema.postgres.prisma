@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -7,12 +7,40 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Role {
+  SUPERADMIN
+  FACULTY
+  VOLUNTEER
+}
+
+enum EventStatus {
+  DRAFT
+  LAUNCHED
+  CLOSED
+}
+
+enum AttendanceStatus {
+  NOT_ATTENDED
+  CHECKED_IN
+}
+
+enum ScanType {
+  TEAM
+  INDIVIDUAL
+}
+
+enum ScanResult {
+  SUCCESS
+  DUPLICATE
+  INVALID
+}
+
 model User {
   id              String          @id @default(uuid())
   name            String
   email           String          @unique
   password_hash   String
-  role            String          @default("VOLUNTEER")
+  role            Role            @default(VOLUNTEER)
   created_at      DateTime        @default(now())
   updated_at      DateTime        @updatedAt
   attendance_logs AttendanceLog[]
@@ -35,11 +63,11 @@ model School {
 model Event {
   id                   String      @id @default(uuid())
   name                 String
-  description          String?
+  description          String?     @db.Text
   sponsor_name         String?
-  sponsor_logo_url     String?
+  sponsor_logo_url     String?     @db.Text
   event_date           DateTime?
-  status               String      @default("DRAFT")
+  status               EventStatus @default(DRAFT)
   min_team_size        Int         @default(1)
   max_team_size        Int         @default(4)
   allowed_email_domain String?
@@ -81,7 +109,7 @@ model Participant {
   university_email  String
   phone             String
   qr_code_token     String           @unique @default(uuid())
-  attendance_status String           @default("NOT_ATTENDED")
+  attendance_status AttendanceStatus @default(NOT_ATTENDED)
   checked_in_at     DateTime?
   is_deleted        Boolean          @default(false)
   deleted_at        DateTime?
@@ -103,9 +131,9 @@ model AttendanceLog {
   team_id        String?
   volunteer_id   String
   scanned_at     DateTime     @default(now())
-  scan_type      String
-  result         String
-  metadata       String?
+  scan_type      ScanType
+  result         ScanResult
+  metadata       String?      @db.Text
 
   participant    Participant? @relation(fields: [participant_id], references: [id], onDelete: Restrict)
   team           Team?        @relation(fields: [team_id], references: [id], onDelete: Restrict)

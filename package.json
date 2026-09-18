@@ -31,5 +31,10 @@
     "express"
   ],
   "author": "ClubGo Engineering",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^7.10.0",
+    "async": "^3.2.6",
+    "prisma": "^8.0.0-rc.15"
+  }
 }

@@ -6,7 +6,7 @@ import { generateQRCodeDataUrl, generateTeamToken, generateParticipantToken } fr
 import { sendRegistrationConfirmationEmail } from '../services/emailService';
 import { broadcastLiveStats } from '../services/socketService';
 import { authenticateToken, requireSuperAdmin } from '../middleware/auth';
-import { EventStatus, AttendanceStatus } from '@prisma/client';
+import { EventStatus, AttendanceStatus } from '../types/enums';
 
 const router = Router();
 

@@ -4,7 +4,7 @@ import { prisma } from '../config/database';
 import { authenticateToken, requireVolunteerOrAdmin, requireFacultyOrAdmin, AuthRequest } from '../middleware/auth';
 import { scanRateLimiter } from '../middleware/rateLimiter';
 import { broadcastAttendanceUpdate, broadcastLiveStats } from '../services/socketService';
-import { AttendanceStatus, ScanResult, ScanType } from '@prisma/client';
+import { AttendanceStatus, ScanResult, ScanType } from '../types/enums';
 
 const router = Router();
 

@@ -23,6 +23,8 @@ logs/
 # Prisma generated & SQLite test dbs
 prisma/*.db
 prisma/*.db-journal
+*.db
+*.db-journal
 
 # OS files
 .DS_Store

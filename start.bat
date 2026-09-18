@@ -18,26 +18,27 @@ if not exist "backend\.env" (
     echo [OK] Created backend\.env
 )
 
-:: 2. Check Docker / PostgreSQL
-echo [*] Checking Docker and local PostgreSQL...
-docker info >nul 2>&1
-if %errorlevel% equ 0 (
-    echo [OK] Docker daemon detected. Starting PostgreSQL container...
-    docker compose up -d
-) else (
-    echo [i] Docker is not active. Using existing PostgreSQL or Cloud Database (Supabase/Neon)
-    echo     configured in backend\.env
+:: 2. Check and initialize Database
+echo [*] Checking database configuration...
+if not exist "backend\prisma\dev.db" (
+    echo [*] First-time setup: Initializing and seeding local database...
+    cd backend
+    call npx prisma db push --skip-generate
+    call npm run db:seed
+    call npm run build
+    cd ..
+    echo [OK] Database initialized with default schools and credentials!
 )
 
-:: 3. Generate Prisma client
-echo [*] Ensuring Prisma Client is generated...
+:: 3. Ensure Prisma Client is generated
+echo [*] Checking Prisma client...
 cd backend
 call npx prisma generate >nul 2>&1
 cd ..
 
 :: 4. Start Backend in separate window
 echo [*] Launching ClubGo Backend server (Port 5000)...
-start "ClubGo Backend [Port 5000]" cmd /k "cd /d "%~dp0backend" && npm run dev"
+start "ClubGo Backend [Port 5000]" cmd /k "cd /d "%~dp0backend" && node dist/index.js"
 
 :: Wait a brief moment for backend to initialize
 timeout /t 3 /nobreak >nul
@@ -59,10 +60,10 @@ echo    [SUCCESS] ClubGo is running!
 echo ======================================================================
 echo.
 echo  Access Points:
-echo    - Public Registration:     http://localhost:5173
-echo    - Volunteer Mobile Scanner: http://localhost:5173 (Select 'Volunteer')
-echo    - Super Admin Dashboard:   http://localhost:5173 (Select 'Admin')
-echo    - Backend API & WebSockets: http://localhost:5000
+echo    - Public Registration:      http://localhost:5173
+echo    - Volunteer Mobile Scanner:  http://localhost:5173 (Click 'Volunteer Scanner')
+echo    - Super Admin Dashboard:    http://localhost:5173 (Click 'Admin Panel')
+echo    - Backend API & WebSockets:  http://localhost:5000
 echo.
 echo  Demo Credentials:
 echo    - Super Admin: admin@clubgo.edu   / Admin@123

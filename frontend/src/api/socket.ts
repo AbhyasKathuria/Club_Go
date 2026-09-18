@@ -4,8 +4,13 @@ let socket: Socket | null = null;
 
 export function getSocket(): Socket {
   if (!socket) {
-    // In dev Vite proxies /socket.io to backend; in prod use current origin or relative
-    socket = io({
+    const backendUrl =
+      import.meta.env.VITE_BACKEND_URL ||
+      (typeof window !== 'undefined' && window.location.port === '5173'
+        ? 'http://localhost:5000'
+        : undefined);
+
+    socket = io(backendUrl || '', {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 15,
       reconnectionDelay: 1000,

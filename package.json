@@ -1,0 +1,35 @@
+{
+  "name": "club-go",
+  "version": "1.0.0",
+  "description": "Full-stack University Event Registration and Real-Time Attendance Management Platform",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build": "npm run build:backend && npm run build:frontend",
+    "db:generate": "npm run db:generate --workspace=backend",
+    "db:migrate": "npm run db:migrate --workspace=backend",
+    "db:push": "npm run db:push --workspace=backend",
+    "db:seed": "npm run db:seed --workspace=backend",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "keywords": [
+    "university-events",
+    "attendance-management",
+    "qr-code",
+    "websockets",
+    "real-time",
+    "prisma",
+    "react",
+    "express"
+  ],
+  "author": "ClubGo Engineering",
+  "license": "MIT"
+}

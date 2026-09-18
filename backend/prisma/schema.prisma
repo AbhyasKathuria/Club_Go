@@ -1,0 +1,145 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPERADMIN
+  FACULTY
+  VOLUNTEER
+}
+
+enum EventStatus {
+  DRAFT
+  LAUNCHED
+  CLOSED
+}
+
+enum AttendanceStatus {
+  NOT_ATTENDED
+  CHECKED_IN
+}
+
+enum ScanType {
+  TEAM
+  INDIVIDUAL
+}
+
+enum ScanResult {
+  SUCCESS
+  DUPLICATE
+  INVALID
+}
+
+model User {
+  id              String          @id @default(uuid())
+  name            String
+  email           String          @unique
+  password_hash   String
+  role            Role            @default(VOLUNTEER)
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  attendance_logs AttendanceLog[]
+
+  @@map("users")
+}
+
+model School {
+  id         String   @id @default(uuid())
+  name       String
+  code       String   @unique
+  color_code String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  teams      Team[]
+
+  @@map("schools")
+}
+
+model Event {
+  id                   String      @id @default(uuid())
+  name                 String
+  description          String?
+  sponsor_name         String?
+  sponsor_logo_url     String?
+  event_date           DateTime?
+  status               EventStatus @default(DRAFT)
+  min_team_size        Int         @default(1)
+  max_team_size        Int         @default(4)
+  allowed_email_domain String?
+  created_at           DateTime    @default(now())
+  updated_at           DateTime    @updatedAt
+  teams                Team[]
+
+  @@map("events")
+}
+
+model Team {
+  id              String          @id @default(uuid())
+  event_id        String
+  school_id       String
+  team_name       String
+  team_size       Int
+  qr_token        String          @unique @default(uuid())
+  checked_in      Boolean         @default(false)
+  checked_in_at   DateTime?
+  is_deleted      Boolean         @default(false)
+  deleted_at      DateTime?
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+
+  event           Event           @relation(fields: [event_id], references: [id], onDelete: Restrict)
+  school          School          @relation(fields: [school_id], references: [id], onDelete: Restrict)
+  participants    Participant[]
+  attendance_logs AttendanceLog[]
+
+  @@index([event_id, school_id])
+  @@index([qr_token])
+  @@map("teams")
+}
+
+model Participant {
+  id                String           @id @default(uuid())
+  team_id           String
+  name              String
+  university_email  String
+  phone             String
+  qr_code_token     String           @unique @default(uuid())
+  attendance_status AttendanceStatus @default(NOT_ATTENDED)
+  checked_in_at     DateTime?
+  is_deleted        Boolean          @default(false)
+  deleted_at        DateTime?
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+
+  team              Team             @relation(fields: [team_id], references: [id], onDelete: Restrict)
+  attendance_logs   AttendanceLog[]
+
+  @@index([team_id])
+  @@index([qr_code_token])
+  @@index([university_email])
+  @@map("participants")
+}
+
+model AttendanceLog {
+  id             String       @id @default(uuid())
+  participant_id String?
+  team_id        String?
+  volunteer_id   String
+  scanned_at     DateTime     @default(now())
+  scan_type      ScanType
+  result         ScanResult
+  metadata       String?
+
+  participant    Participant? @relation(fields: [participant_id], references: [id], onDelete: Restrict)
+  team           Team?        @relation(fields: [team_id], references: [id], onDelete: Restrict)
+  volunteer      User         @relation(fields: [volunteer_id], references: [id], onDelete: Restrict)
+
+  @@index([scanned_at])
+  @@index([volunteer_id])
+  @@map("attendance_logs")
+}

@@ -21,13 +21,32 @@ export function getSocket(): Socket {
     });
 
     socket.on('disconnect', (reason) => {
-      if (reason !== 'io client disconnect') {
-        console.log('🔌 Socket disconnected:', reason);
+      // Suppress benign background and navigation disconnects
+      if (
+        reason === 'io client disconnect' ||
+        reason === 'transport close' ||
+        reason === 'transport error' ||
+        (typeof document !== 'undefined' && document.visibilityState === 'hidden')
+      ) {
+        return;
       }
+      console.log('🔌 Socket disconnected:', reason);
     });
 
-    // Gracefully handle browser Back-Forward Cache (bfcache) navigation
+    // Gracefully handle browser tab visibility and Back-Forward Cache (bfcache)
     if (typeof window !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          if (socket?.connected) {
+            socket.disconnect();
+          }
+        } else if (document.visibilityState === 'visible') {
+          if (socket && !socket.connected) {
+            socket.connect();
+          }
+        }
+      });
+
       window.addEventListener('pagehide', () => {
         if (socket?.connected) {
           socket.disconnect();

@@ -52,6 +52,30 @@ export const QRPassCard: React.FC<QRPassCardProps> = ({ team, teamQrDataUrl, par
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden max-w-xl mx-auto">
       
+      {/* Official University & Club Header Strip */}
+      <div className="bg-white px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <img
+            src="/images/Presidency.png"
+            alt="Presidency University"
+            className="h-7 w-auto object-contain"
+          />
+        </div>
+
+        <div className="flex items-center space-x-3">
+          <img
+            src="/images/iiclogo.png"
+            alt="IIC"
+            className="h-6 w-auto object-contain hidden sm:block"
+          />
+          <img
+            src="/images/CogniCore Logo.png"
+            alt="CogniCore Club"
+            className="h-8 w-auto object-contain"
+          />
+        </div>
+      </div>
+
       {/* School Color Header Banner */}
       <div
         className="p-6 text-white relative overflow-hidden transition-colors"

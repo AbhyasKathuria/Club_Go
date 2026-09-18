@@ -28,9 +28,20 @@ export const AdminLoginPage: React.FC = () => {
       <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200/90 p-8 shadow-md">
         
         <div className="text-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3 border border-indigo-100">
-            <Shield className="w-8 h-8" />
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <img
+              src="/images/Presidency.png"
+              alt="Presidency University"
+              className="h-8 w-auto object-contain"
+            />
+            <div className="h-6 w-px bg-slate-200" />
+            <img
+              src="/images/CogniCore Logo.png"
+              alt="CogniCore Club"
+              className="h-9 w-auto object-contain"
+            />
           </div>
+
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Admin & Faculty Portal</h2>
           <p className="text-xs text-slate-500 mt-1">
             Super Coordinator & Faculty Lead Administration

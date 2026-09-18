@@ -201,11 +201,63 @@ export const RegisterPage: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       
+      {/* Institutional Organizer Branding Banner */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="flex items-center space-x-3">
+            <img
+              src="/images/Presidency.png"
+              alt="Presidency University"
+              className="h-10 w-auto object-contain"
+            />
+            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
+            <img
+              src="/images/DSA NAAC.png"
+              alt="DSA NAAC A Accredited"
+              className="h-9 w-auto object-contain hidden sm:block"
+            />
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <img
+              src="/images/iiclogo.png"
+              alt="Institution's Innovation Council"
+              className="h-9 w-auto object-contain"
+            />
+            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
+            <div className="flex items-center space-x-2">
+              <img
+                src="/images/CogniCore Logo.png"
+                alt="CogniCore Club"
+                className="h-11 w-auto object-contain"
+              />
+              <div className="hidden md:block text-left">
+                <div className="text-xs font-black text-slate-800 tracking-tight leading-none">
+                  COGNICORE CLUB
+                </div>
+                <div className="text-[9px] font-semibold text-slate-400 tracking-wider uppercase mt-0.5">
+                  Where Intelligence Meets Innovation
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-3 flex items-center justify-between text-xs text-slate-500">
+          <span className="font-semibold text-slate-700">
+            Presidency University • Department of Student Affairs (DSA)
+          </span>
+          <span className="text-[11px] text-blue-600 font-bold hidden sm:inline-block">
+            Ministry of Education Initiative (IIC)
+          </span>
+        </div>
+      </div>
+
       {/* Event Header Banner */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm mb-8 text-center relative overflow-hidden">
         <div className="inline-flex items-center space-x-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
           <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-          <span>Official Registration Open</span>
+          <span>Official Event Registration</span>
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">

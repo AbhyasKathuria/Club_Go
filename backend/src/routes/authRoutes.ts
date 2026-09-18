@@ -52,88 +52,11 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
-// POST /api/auth/coordinator/register - Student Co-ordinator registration (awaiting approval)
-const coordinatorRegisterSchema = z
-  .object({
-    name: z.string().min(2, 'Name is required'),
-    username: z.string().min(3, 'Username must be at least 3 characters').max(30),
-    roll_number: z.string().optional(),
-    rollNumber: z.string().optional(),
-    email: z.string().email('Valid email is required'),
-    phone: z.string().optional(),
-    school_name: z.string().optional(),
-    schoolName: z.string().optional(),
-  })
-  .refine((data) => !!(data.roll_number || data.rollNumber), {
-    message: 'Valid roll number is required',
-    path: ['roll_number'],
+// POST /api/auth/coordinator/register - Disabled (Co-ordinators are directly allocated by SuperAdmin)
+router.post('/coordinator/register', async (req, res) => {
+  res.status(403).json({
+    error: 'Public co-ordinator registration is disabled. Student Co-ordinators are directly appointed and allocated by the Super Admin in the Admin Portal.',
   });
-
-router.post('/coordinator/register', async (req, res, next) => {
-  try {
-    const data = coordinatorRegisterSchema.parse(req.body);
-    const normalizedUsername = data.username.toLowerCase().trim();
-    const rollRaw = (data.roll_number || data.rollNumber || '').trim();
-    const normalizedRoll = rollRaw.toUpperCase();
-    const normalizedEmail = data.email.toLowerCase().trim();
-    const schoolName = (data.school_name || data.schoolName || '').trim() || null;
-
-    // Check for existing user
-    const existing = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: normalizedEmail },
-          { username: normalizedUsername },
-          { roll_number: normalizedRoll },
-        ],
-      },
-    });
-
-    if (existing) {
-      if (existing.email === normalizedEmail) {
-        res.status(409).json({ error: 'A coordinator with this email already exists.' });
-        return;
-      }
-      if (existing.username === normalizedUsername) {
-        res.status(409).json({ error: 'This username is already taken. Please pick another.' });
-        return;
-      }
-      if (existing.roll_number === normalizedRoll) {
-        res.status(409).json({ error: 'A coordinator with this roll number is already registered.' });
-        return;
-      }
-    }
-
-    // Default password hash is roll number
-    const passwordHash = await bcrypt.hash(normalizedRoll, 10);
-
-    const user = await prisma.user.create({
-      data: {
-        name: data.name.trim(),
-        username: normalizedUsername,
-        roll_number: normalizedRoll,
-        email: normalizedEmail,
-        password_hash: passwordHash,
-        role: 'VOLUNTEER',
-        is_approved: false, // Must be approved by SuperAdmin
-        phone: data.phone?.trim() || null,
-        school_name: schoolName,
-      },
-    });
-
-    res.status(201).json({
-      message: 'Co-ordinator registration submitted successfully! Your account is pending approval by the Super Admin.',
-      coordinator: {
-        id: user.id,
-        name: user.name,
-        username: user.username,
-        roll_number: user.roll_number,
-        is_approved: false,
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
 });
 
 // POST /api/auth/coordinator/login - Login via Username + Roll Number

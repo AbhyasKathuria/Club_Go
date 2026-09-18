@@ -119,21 +119,32 @@ router.post('/unlock', async (req, res, next) => {
       },
     });
 
-    const matchedTeam = teams.find(
-      (t) => t.team_name.trim().toLowerCase() === searchName || t.qr_token.toLowerCase() === searchName
-    );
+    const matchingTeams = teams.filter((t) => {
+      const matchName = t.team_name.trim().toLowerCase() === searchName;
+      const matchToken = t.qr_token.toLowerCase() === searchName;
+      const matchParticipant = t.participants.some(
+        (p) =>
+          p.university_email.toLowerCase() === searchName ||
+          p.name.toLowerCase() === searchName ||
+          p.qr_code_token.toLowerCase() === searchName
+      );
+      return matchName || matchToken || matchParticipant;
+    });
 
-    if (!matchedTeam) {
+    if (matchingTeams.length === 0) {
       res.status(404).json({
-        error: `No team matching "${teamName}" was found for this event. Please verify your team name.`,
+        error: `No team found matching "${teamName}". Please check your registered Team Name or University Email.`,
       });
       return;
     }
 
+    // Prioritize team that has published results
+    const matchedTeam = matchingTeams.find((t) => t.results.some((r) => r.is_published)) || matchingTeams[0];
+
     const teamResult = matchedTeam.results.find((r) => r.is_published);
     if (!teamResult) {
       res.status(404).json({
-        error: `Results for team "${matchedTeam.team_name}" have not been finalized or published yet. Please check back shortly.`,
+        error: `Results for team "${matchedTeam.team_name}" have not been finalized or published yet. Please check back after the ceremony.`,
       });
       return;
     }
@@ -243,7 +254,15 @@ const saveResultSchema = z.object({
   awardTitle: z.string().min(2, 'Award or position title is required'),
   remarks: z.string().optional(),
   isPublished: z.boolean().default(true),
-  customCertificateUrl: z.string().optional(),
+  customCertificateUrl: z.string().optional().nullable(),
+  memberCertificates: z
+    .array(
+      z.object({
+        participantId: z.string(),
+        certificateUrl: z.string().optional().nullable(),
+      })
+    )
+    .optional(),
 });
 
 router.post('/', authenticateToken, requireFacultyOrAdmin, async (req: AuthRequest, res: Response, next) => {
@@ -294,6 +313,13 @@ router.post('/', authenticateToken, requireFacultyOrAdmin, async (req: AuthReque
     for (const p of team.participants) {
       const certSerial = `CERT-${currentYear}-${schoolCode}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
+      // Check for member-specific certificate PNG / URL
+      const memberEntry = data.memberCertificates?.find((m) => m.participantId === p.id);
+      let certUrl = data.customCertificateUrl || null;
+      if (memberEntry !== undefined) {
+        certUrl = memberEntry.certificateUrl || null;
+      }
+
       await prisma.certificate.upsert({
         where: {
           result_id_participant_id: {
@@ -304,7 +330,7 @@ router.post('/', authenticateToken, requireFacultyOrAdmin, async (req: AuthReque
         update: {
           recipient_name: p.name,
           award_title: data.awardTitle,
-          certificate_url: data.customCertificateUrl || null,
+          certificate_url: certUrl,
         },
         create: {
           result_id: result.id,
@@ -312,7 +338,7 @@ router.post('/', authenticateToken, requireFacultyOrAdmin, async (req: AuthReque
           certificate_no: certSerial,
           recipient_name: p.name,
           award_title: data.awardTitle,
-          certificate_url: data.customCertificateUrl || null,
+          certificate_url: certUrl,
         },
       });
     }

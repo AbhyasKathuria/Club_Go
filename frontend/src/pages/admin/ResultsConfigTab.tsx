@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/client';
-import { Award, Trophy, CheckCircle2, AlertCircle, Search, Sparkles, Eye, Trash2, X, FileText } from 'lucide-react';
+import {
+  Award,
+  Trophy,
+  CheckCircle2,
+  AlertCircle,
+  Search,
+  Sparkles,
+  Eye,
+  Trash2,
+  X,
+  FileText,
+  Upload,
+  Image as ImageIcon,
+  Check,
+} from 'lucide-react';
 
 export const ResultsConfigTab: React.FC = () => {
   const [event, setEvent] = useState<any | null>(null);
@@ -17,6 +31,7 @@ export const ResultsConfigTab: React.FC = () => {
   const [remarks, setRemarks] = useState('');
   const [isPublished, setIsPublished] = useState(true);
   const [customCertUrl, setCustomCertUrl] = useState('');
+  const [memberCerts, setMemberCerts] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
   const loadResults = async () => {
@@ -49,6 +64,52 @@ export const ResultsConfigTab: React.FC = () => {
       setIsPublished(true);
     }
     setCustomCertUrl('');
+
+    // Pre-fill existing member certificate PNGs if available
+    const initialCerts: Record<string, string> = {};
+    if (team.result?.certificates) {
+      team.result.certificates.forEach((c: any) => {
+        if (c.certificate_url) {
+          initialCerts[c.participant_id] = c.certificate_url;
+        }
+      });
+    }
+    setMemberCerts(initialCerts);
+  };
+
+  const handleMemberFileUpload = (participantId: string, file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file (PNG, JPG, or WEBP).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const resultStr = reader.result as string;
+      setMemberCerts((prev) => ({
+        ...prev,
+        [participantId]: resultStr,
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleBulkFileUpload = (file: File) => {
+    if (!file || !selectedTeam) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file (PNG, JPG, or WEBP).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const resultStr = reader.result as string;
+      const updated: Record<string, string> = {};
+      selectedTeam.participants.forEach((p: any) => {
+        updated[p.id] = resultStr;
+      });
+      setMemberCerts(updated);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveResult = async (e: React.FormEvent) => {
@@ -67,7 +128,11 @@ export const ResultsConfigTab: React.FC = () => {
         awardTitle: awardTitle.trim(),
         remarks: remarks.trim() || undefined,
         isPublished,
-        customCertificateUrl: customCertUrl.trim() || undefined,
+        customCertificateUrl: customCertUrl.trim() || null,
+        memberCertificates: selectedTeam.participants.map((p: any) => ({
+          participantId: p.id,
+          certificateUrl: memberCerts[p.id] || null,
+        })),
       });
 
       setMessage(res.message || 'Result and certificates updated.');
@@ -311,7 +376,7 @@ export const ResultsConfigTab: React.FC = () => {
       {/* Award & Certificate Modal */}
       {selectedTeam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-lg w-full shadow-2xl space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900">
@@ -406,18 +471,109 @@ export const ResultsConfigTab: React.FC = () => {
                 />
               </div>
 
-              {/* Participant Preview List */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-                <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                  Certificates will be issued to {selectedTeam.participants.length} member(s):
+              {/* Individual Member PNG Certificates Section */}
+              <div className="space-y-3 pt-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      Individual Member PNG Certificates ({selectedTeam.participants.length})
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Attach a personalized PNG certificate image for each participant
+                    </p>
+                  </div>
+
+                  <label className="self-start sm:self-auto px-2.5 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg text-[11px] font-bold cursor-pointer transition-colors flex items-center space-x-1.5 shadow-2xs">
+                    <Upload className="w-3 h-3 text-blue-600" />
+                    <span>Apply 1 PNG to All Members</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) handleBulkFileUpload(e.target.files[0]);
+                      }}
+                    />
+                  </label>
                 </div>
-                <div className="space-y-1">
-                  {selectedTeam.participants.map((p: any, idx: number) => (
-                    <div key={p.id} className="text-xs text-slate-600 flex items-center justify-between">
-                      <span>• {p.name}</span>
-                      <span className="font-mono text-[10px] text-slate-400">{p.university_email}</span>
-                    </div>
-                  ))}
+
+                <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                  {selectedTeam.participants.map((p: any) => {
+                    const certPng = memberCerts[p.id];
+                    return (
+                      <div
+                        key={p.id}
+                        className="p-3 rounded-xl border border-slate-200/90 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-amber-300 transition-colors"
+                      >
+                        <div className="space-y-0.5">
+                          <div className="font-bold text-slate-900 text-xs flex items-center space-x-2">
+                            <span>{p.name}</span>
+                            {certPng ? (
+                              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                                <Check className="w-2.5 h-2.5" />
+                                <span>PNG Attached</span>
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-slate-200 text-slate-600">
+                                Default Template
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-mono text-[10px] text-slate-400">{p.university_email}</div>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          {certPng ? (
+                            <div className="flex items-center space-x-2">
+                              <img
+                                src={certPng}
+                                alt={`Cert for ${p.name}`}
+                                className="h-10 w-16 object-cover rounded-lg border border-slate-300 shadow-xs"
+                              />
+                              <label className="px-2.5 py-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg text-[11px] font-bold cursor-pointer transition-colors">
+                                Replace PNG
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    if (e.target.files?.[0]) handleMemberFileUpload(p.id, e.target.files[0]);
+                                  }}
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMemberCerts((prev) => {
+                                    const next = { ...prev };
+                                    delete next[p.id];
+                                    return next;
+                                  });
+                                }}
+                                className="p-1 text-rose-500 hover:text-rose-700 rounded-lg hover:bg-rose-50"
+                                title="Remove PNG"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="px-3 py-1.5 bg-white hover:bg-blue-50/70 text-blue-600 border border-blue-200 hover:border-blue-300 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center space-x-1.5 shadow-2xs">
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>Attach Member PNG</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files?.[0]) handleMemberFileUpload(p.id, e.target.files[0]);
+                                }}
+                              />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

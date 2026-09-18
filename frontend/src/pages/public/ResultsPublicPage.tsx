@@ -17,6 +17,8 @@ import {
   ExternalLink,
   ShieldCheck,
   X,
+  Eye,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 export const ResultsPublicPage: React.FC = () => {
@@ -126,7 +128,7 @@ export const ResultsPublicPage: React.FC = () => {
           <div>
             <h2 className="text-base font-bold text-slate-900">Unlock Individual Certificates</h2>
             <p className="text-xs text-slate-500 font-normal">
-              Enter your exact team name as submitted during registration
+              Enter your registered Team Name or University Email
             </p>
           </div>
         </div>
@@ -139,7 +141,7 @@ export const ResultsPublicPage: React.FC = () => {
                 type="text"
                 value={teamSearch}
                 onChange={(e) => setTeamSearch(e.target.value)}
-                placeholder="e.g. Binary Titans or Quantum Pioneers"
+                placeholder="e.g. Binary Titans, Xsparks, or student@university.edu"
                 className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 bg-white"
                 required
               />
@@ -215,7 +217,7 @@ export const ResultsPublicPage: React.FC = () => {
                   key={cert.id}
                   className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3 flex flex-col justify-between hover:border-amber-300 transition-colors"
                 >
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
                         {cert.certificateNo}
@@ -226,19 +228,39 @@ export const ResultsPublicPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="text-base font-black text-slate-900">
-                      {cert.recipientName}
-                    </div>
-
-                    <div className="text-xs font-semibold text-amber-600">
-                      {cert.awardTitle}
-                    </div>
-
-                    {cert.participant?.email && (
-                      <div className="text-[11px] text-slate-500 font-mono">
-                        {cert.participant.email}
+                    {/* PNG Certificate Preview Thumbnail */}
+                    {cert.certificateUrl ? (
+                      <div
+                        onClick={() => handleOpenCertificate(cert)}
+                        className="rounded-xl overflow-hidden border border-slate-200 bg-slate-900 h-32 flex items-center justify-center cursor-pointer group relative shadow-inner"
+                      >
+                        <img
+                          src={cert.certificateUrl}
+                          alt={`Certificate for ${cert.recipientName}`}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center text-white text-xs font-bold space-x-1.5 opacity-90 group-hover:opacity-100">
+                          <Eye className="w-4 h-4 text-amber-400" />
+                          <span>Click to View Full PNG</span>
+                        </div>
                       </div>
-                    )}
+                    ) : null}
+
+                    <div>
+                      <div className="text-base font-black text-slate-900">
+                        {cert.recipientName}
+                      </div>
+
+                      <div className="text-xs font-semibold text-amber-600 mt-0.5">
+                        {cert.awardTitle}
+                      </div>
+
+                      {cert.participant?.email && (
+                        <div className="text-[11px] text-slate-500 font-mono mt-1">
+                          {cert.participant.email}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <button
@@ -246,7 +268,7 @@ export const ResultsPublicPage: React.FC = () => {
                     className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow-sm"
                   >
                     <Award className="w-3.5 h-3.5 text-amber-400" />
-                    <span>View & Download Certificate</span>
+                    <span>{cert.certificateUrl ? 'View & Download PNG Certificate' : 'View & Download Certificate'}</span>
                   </button>
                 </div>
               ))}
@@ -337,6 +359,17 @@ export const ResultsPublicPage: React.FC = () => {
               </span>
 
               <div className="flex items-center space-x-2">
+                {viewingCert.certificateUrl && (
+                  <a
+                    href={viewingCert.certificateUrl}
+                    download={`Certificate_${viewingCert.recipientName.replace(/\s+/g, '_')}.png`}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 shadow-sm"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download PNG</span>
+                  </a>
+                )}
+
                 <button
                   onClick={handlePrintCertificate}
                   className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 shadow-sm"
@@ -354,77 +387,104 @@ export const ResultsPublicPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Printable Certificate Sheet */}
-            <div className="p-8 sm:p-12 border-8 border-double border-amber-600/60 bg-gradient-to-b from-amber-50/20 via-white to-amber-50/10 rounded-xl relative text-center space-y-6 font-serif">
-              
-              {/* University Emblem Strip */}
-              <div className="flex items-center justify-between px-4">
-                <img src="/images/Presidency.png" alt="Presidency University" className="h-10 sm:h-12 w-auto object-contain" />
-                <div className="text-center font-sans">
-                  <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">
-                    Government of Karnataka State University
+            {/* If Custom PNG Certificate is Uploaded by Admin */}
+            {viewingCert.certificateUrl ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-slate-950 flex items-center justify-center p-2 sm:p-3">
+                  <img
+                    src={viewingCert.certificateUrl}
+                    alt={`Certificate for ${viewingCert.recipientName}`}
+                    className="w-full h-auto max-h-[70vh] object-contain rounded-xl shadow-lg"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2 text-xs font-sans">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-mono font-bold text-slate-500 uppercase">{viewingCert.certificateNo}</span>
+                    <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <ShieldCheck className="w-3 h-3" />
+                      <span>Official Presidential Issue</span>
+                    </span>
                   </div>
-                  <div className="text-xs font-black tracking-tight text-slate-900">
-                    PRESIDENCY UNIVERSITY, BENGALURU
+
+                  <div className="text-[11px] text-slate-500">
+                    Presidency University • CogniCore Club
                   </div>
                 </div>
-                <img src="/images/CogniCore Logo.png" alt="CogniCore Club" className="h-11 sm:h-14 w-auto object-contain" />
               </div>
-
-              <div className="space-y-1 pt-2">
-                <div className="text-[11px] uppercase tracking-widest text-amber-700 font-sans font-bold">
-                  Department of Student Affairs • CogniCore Club
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 uppercase font-sans">
-                  Certificate of Achievement
-                </h1>
-                <div className="w-20 h-1 bg-amber-500 mx-auto rounded-full mt-2" />
-              </div>
-
-              <div className="space-y-3 py-2">
-                <p className="text-xs text-slate-600 italic">
-                  This is proudly presented to
-                </p>
-
-                <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-wide underline decoration-amber-400 underline-offset-8">
-                  {viewingCert.recipientName}
-                </div>
-
-                <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed pt-3">
-                  of team <span className="font-bold text-slate-800 font-sans">{unlockedData?.team.teamName}</span> representing{' '}
-                  <span className="font-bold text-slate-800 font-sans">{unlockedData?.team.school.name}</span>, in recognition of securing{' '}
-                  <span className="font-bold text-amber-700 font-sans">{viewingCert.awardTitle}</span> at the annual{' '}
-                  <span className="font-bold text-slate-800 font-sans">{eventName}</span>.
-                </p>
-              </div>
-
-              {/* Signatures & Verifier QR */}
-              <div className="pt-6 border-t border-slate-200/80 flex items-end justify-between text-left font-sans">
-                <div>
-                  <div className="font-script text-lg text-slate-700 italic">Dr. Evelyn Reed</div>
-                  <div className="h-px w-28 bg-slate-400 my-1" />
-                  <div className="text-[10px] font-bold text-slate-700">Faculty Coordinator</div>
-                  <div className="text-[9px] text-slate-400">Department of Student Affairs</div>
-                </div>
-
-                {certQrUrl && (
-                  <div className="text-center">
-                    <img src={certQrUrl} alt="Certificate QR" className="w-16 h-16 mx-auto" />
-                    <div className="font-mono text-[8px] text-slate-400 mt-1">
-                      {viewingCert.certificateNo}
+            ) : (
+              /* Printable Certificate Sheet */
+              <div className="p-8 sm:p-12 border-8 border-double border-amber-600/60 bg-gradient-to-b from-amber-50/20 via-white to-amber-50/10 rounded-xl relative text-center space-y-6 font-serif">
+                
+                {/* University Emblem Strip */}
+                <div className="flex items-center justify-between px-4">
+                  <img src="/images/Presidency.png" alt="Presidency University" className="h-10 sm:h-12 w-auto object-contain" />
+                  <div className="text-center font-sans">
+                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">
+                      Government of Karnataka State University
+                    </div>
+                    <div className="text-xs font-black tracking-tight text-slate-900">
+                      PRESIDENCY UNIVERSITY, BENGALURU
                     </div>
                   </div>
-                )}
-
-                <div className="text-right">
-                  <div className="font-script text-lg text-slate-700 italic">Alex Rivera</div>
-                  <div className="h-px w-28 bg-slate-400 my-1 ml-auto" />
-                  <div className="text-[10px] font-bold text-slate-700">Student Coordinator Lead</div>
-                  <div className="text-[9px] text-slate-400">CogniCore Club</div>
+                  <img src="/images/CogniCore Logo.png" alt="CogniCore Club" className="h-11 sm:h-14 w-auto object-contain" />
                 </div>
-              </div>
 
-            </div>
+                <div className="space-y-1 pt-2">
+                  <div className="text-[11px] uppercase tracking-widest text-amber-700 font-sans font-bold">
+                    Department of Student Affairs • CogniCore Club
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 uppercase font-sans">
+                    Certificate of Achievement
+                  </h1>
+                  <div className="w-20 h-1 bg-amber-500 mx-auto rounded-full mt-2" />
+                </div>
+
+                <div className="space-y-3 py-2">
+                  <p className="text-xs text-slate-600 italic">
+                    This is proudly presented to
+                  </p>
+
+                  <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-wide underline decoration-amber-400 underline-offset-8">
+                    {viewingCert.recipientName}
+                  </div>
+
+                  <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed pt-3">
+                    of team <span className="font-bold text-slate-800 font-sans">{unlockedData?.team.teamName}</span> representing{' '}
+                    <span className="font-bold text-slate-800 font-sans">{unlockedData?.team.school.name}</span>, in recognition of securing{' '}
+                    <span className="font-bold text-amber-700 font-sans">{viewingCert.awardTitle}</span> at the annual{' '}
+                    <span className="font-bold text-slate-800 font-sans">{eventName}</span>.
+                  </p>
+                </div>
+
+                {/* Signatures & Verifier QR */}
+                <div className="pt-6 border-t border-slate-200/80 flex items-end justify-between text-left font-sans">
+                  <div>
+                    <div className="font-script text-lg text-slate-700 italic">Dr. Evelyn Reed</div>
+                    <div className="h-px w-28 bg-slate-400 my-1" />
+                    <div className="text-[10px] font-bold text-slate-700">Faculty Coordinator</div>
+                    <div className="text-[9px] text-slate-400">Department of Student Affairs</div>
+                  </div>
+
+                  {certQrUrl && (
+                    <div className="text-center">
+                      <img src={certQrUrl} alt="Certificate QR" className="w-16 h-16 mx-auto" />
+                      <div className="font-mono text-[8px] text-slate-400 mt-1">
+                        {viewingCert.certificateNo}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="text-right">
+                    <div className="font-script text-lg text-slate-700 italic">Alex Rivera</div>
+                    <div className="h-px w-28 bg-slate-400 my-1 ml-auto" />
+                    <div className="text-[10px] font-bold text-slate-700">Student Coordinator Lead</div>
+                    <div className="text-[9px] text-slate-400">CogniCore Club</div>
+                  </div>
+                </div>
+
+              </div>
+            )}
 
           </div>
         </div>

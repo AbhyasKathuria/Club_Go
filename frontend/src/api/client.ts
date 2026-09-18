@@ -151,7 +151,8 @@ export const api = {
     awardTitle: string;
     remarks?: string;
     isPublished: boolean;
-    customCertificateUrl?: string;
+    customCertificateUrl?: string | null;
+    memberCertificates?: Array<{ participantId: string; certificateUrl?: string | null }>;
   }) =>
     request<any>('/results', {
       method: 'POST',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { api } from '../../api/client';
 import { School, Event } from '../../types';
@@ -12,6 +12,8 @@ export const RegisterPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   // Form State
   const [teamName, setTeamName] = useState('');
@@ -94,17 +96,26 @@ export const RegisterPage: React.FC = () => {
   const selectedSchool = schools.find((s) => s.id === selectedSchoolId);
   const schoolTheme = getSchoolTheme(selectedSchool?.code, selectedSchool?.color_code);
 
+  const showError = (msg: string) => {
+    setError(msg);
+    setTimeout(() => {
+      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
+    if (isSubmitting || isSubmittingRef.current) return;
+
     if (!teamName.trim()) {
-      setError('Please provide a team name.');
+      showError('Please provide a team name.');
       return;
     }
 
     if (!selectedSchoolId) {
-      setError('Please select a school.');
+      showError('Please select a school.');
       return;
     }
 
@@ -113,23 +124,32 @@ export const RegisterPage: React.FC = () => {
     for (let i = 0; i < participants.length; i++) {
       const p = participants[i];
       if (!p.name.trim()) {
-        setError(`Please enter the full name for Member ${i + 1}.`);
+        showError(`Please enter the full name for Member ${i + 1}.`);
         return;
       }
       if (!p.email.trim()) {
-        setError(`Please enter the email address for Member ${i + 1}.`);
+        showError(`Please enter the email address for Member ${i + 1}.`);
         return;
       }
       if (!emailRegex.test(p.email.trim())) {
-        setError(`"${p.email.trim()}" is not a valid email address for Member ${i + 1}. Please provide a valid email (e.g. yourname@university.edu).`);
+        showError(`"${p.email.trim()}" is not a valid email address for Member ${i + 1}. Please provide a valid email (e.g. yourname@university.edu).`);
         return;
       }
       if (!p.phone.trim()) {
-        setError(`Please enter the contact phone number for Member ${i + 1}.`);
+        showError(`Please enter the contact phone number for Member ${i + 1}.`);
         return;
       }
     }
 
+    // Check for duplicate emails within this submission
+    const cleanedEmails = participants.map((p) => p.email.trim().toLowerCase());
+    const duplicates = cleanedEmails.filter((item, index) => cleanedEmails.indexOf(item) !== index);
+    if (duplicates.length > 0) {
+      showError(`Each team member must have a unique email address. Duplicate email detected: "${duplicates[0]}".`);
+      return;
+    }
+
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -155,9 +175,10 @@ export const RegisterPage: React.FC = () => {
         colors: [schoolTheme.hex, '#2563EB', '#10B981', '#F59E0B'],
       });
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please verify details and try again.');
+      showError(err.message || 'Registration failed. Please verify details and try again.');
     } finally {
       setIsSubmitting(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -329,9 +350,20 @@ export const RegisterPage: React.FC = () => {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-start space-x-2.5">
+        <div
+          ref={errorRef}
+          className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-800 text-sm flex items-start space-x-3 shadow-sm"
+        >
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-600" />
-          <div>{error}</div>
+          <div className="space-y-1">
+            <div className="font-bold text-rose-900 text-sm">Registration Notice</div>
+            <div className="text-xs sm:text-sm font-medium">{error}</div>
+            {error.toLowerCase().includes('already registered') && (
+              <p className="text-xs text-rose-700/90 pt-1 leading-relaxed">
+                💡 <strong>Tip:</strong> If your team is already registered, admission passes were dispatched to your email. You can also view event outcomes on the <strong>Results & Certs</strong> tab or consult the student coordinator desk at the entrance.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -601,16 +633,33 @@ export const RegisterPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Bottom Error Banner if any */}
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center justify-center space-x-2 text-center shadow-xs">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* Submit Action */}
         <div className="text-center pt-2">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-4 text-white font-bold text-base rounded-xl shadow-lg transition-all transform active:scale-95 disabled:opacity-50"
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-4 text-white font-bold text-base rounded-xl shadow-lg transition-all transform active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ backgroundColor: schoolTheme.hex }}
           >
-            <span>{isSubmitting ? 'Registering Team...' : 'Complete Registration & Get Passes'}</span>
-            <ArrowRight className="w-5 h-5" />
+            {isSubmitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Registering Team...</span>
+              </>
+            ) : (
+              <>
+                <span>Complete Registration & Get Passes</span>
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
           </button>
           <p className="text-xs text-slate-400 mt-2">
             Instant QR pass generation • University verification required at gate

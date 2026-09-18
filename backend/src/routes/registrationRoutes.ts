@@ -82,8 +82,35 @@ router.post('/', registrationRateLimiter, async (req, res, next) => {
       return;
     }
 
-    // 5. Check for duplicate emails within this event
-    const emails = data.participants.map((p) => p.email.toLowerCase());
+    // 5. Check for duplicate emails within the submitted team roster
+    const emails = data.participants.map((p) => p.email.trim().toLowerCase());
+    const uniqueEmailsInRoster = new Set(emails);
+    if (uniqueEmailsInRoster.size !== emails.length) {
+      res.status(400).json({
+        error: 'Each team member must have a distinct email address. Duplicate emails detected in your team submission.',
+      });
+      return;
+    }
+
+    // 6. Check for duplicate team name in this event
+    const existingTeam = await prisma.team.findFirst({
+      where: {
+        event_id: event.id,
+        team_name: {
+          equals: data.teamName.trim(),
+        },
+        is_deleted: false,
+      },
+    });
+
+    if (existingTeam) {
+      res.status(409).json({
+        error: `A team named "${data.teamName.trim()}" is already registered for this event. Please choose a unique team name.`,
+      });
+      return;
+    }
+
+    // 7. Check for duplicate emails already registered for this event
     const existingParticipants = await prisma.participant.findMany({
       where: {
         is_deleted: false,
@@ -99,7 +126,7 @@ router.post('/', registrationRateLimiter, async (req, res, next) => {
     if (existingParticipants.length > 0) {
       const duplicateEmails = existingParticipants.map((p) => p.university_email).join(', ');
       res.status(409).json({
-        error: `The following email(s) are already registered for this event: ${duplicateEmails}`,
+        error: `Email already registered: ${duplicateEmails} is already registered for this event. Each participant can only be registered once.`,
       });
       return;
     }

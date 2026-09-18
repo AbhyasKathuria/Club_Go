@@ -37,9 +37,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     let errorMsg = `HTTP Error ${response.status}`;
     try {
       const errorData = await response.json();
-      errorMsg = errorData.error || errorData.message || errorMsg;
-      if (errorData.details) {
-        errorMsg += `: ${errorData.details.map((d: any) => d.message).join(', ')}`;
+      if (errorData.details && Array.isArray(errorData.details)) {
+        errorMsg = errorData.details
+          .map((d: any) => `${d.path.replace('participants.', 'Member ')}: ${d.message}`)
+          .join(' • ');
+      } else {
+        errorMsg = errorData.error || errorData.message || errorMsg;
       }
     } catch {
       // ignore

@@ -12,7 +12,7 @@ const router = Router();
 
 const registrationSchema = z.object({
   eventId: z.string().optional(),
-  schoolId: z.string().uuid(),
+  schoolId: z.string().min(1),
   teamName: z.string().min(2, 'Team name must be at least 2 characters').max(50),
   participants: z
     .array(

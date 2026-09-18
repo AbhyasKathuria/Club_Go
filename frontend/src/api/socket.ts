@@ -5,7 +5,7 @@ let socket: Socket | null = null;
 export function getSocket(): Socket {
   if (!socket) {
     const backendUrl =
-      import.meta.env.VITE_BACKEND_URL ||
+      (import.meta as any).env?.VITE_BACKEND_URL ||
       (typeof window !== 'undefined' && window.location.port === '5173'
         ? 'http://localhost:5000'
         : undefined);

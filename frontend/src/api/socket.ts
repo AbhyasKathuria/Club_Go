@@ -21,8 +21,25 @@ export function getSocket(): Socket {
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('🔌 Socket disconnected:', reason);
+      if (reason !== 'io client disconnect') {
+        console.log('🔌 Socket disconnected:', reason);
+      }
     });
+
+    // Gracefully handle browser Back-Forward Cache (bfcache) navigation
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pagehide', () => {
+        if (socket?.connected) {
+          socket.disconnect();
+        }
+      });
+
+      window.addEventListener('pageshow', () => {
+        if (socket && !socket.connected) {
+          socket.connect();
+        }
+      });
+    }
   }
 
   return socket;

@@ -7,6 +7,7 @@ import { EventConfigTab } from './EventConfigTab';
 import { SchoolConfigTab } from './SchoolConfigTab';
 import { CoordinatorConfigTab } from './CoordinatorConfigTab';
 import { ResultsConfigTab } from './ResultsConfigTab';
+import { RegistrationFormBuilderTab } from './RegistrationFormBuilderTab';
 import {
   Users,
   UserCheck,
@@ -32,7 +33,9 @@ export const AdminDashboard: React.FC = () => {
   const { user, isSuperAdmin } = useAuth();
   const { socket, isConnected } = useSocket();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'coordinators' | 'results' | 'school-config' | 'event-config'>('dashboard');
+  const [activeTab, setActiveTab] = useState<
+    'dashboard' | 'coordinators' | 'results' | 'school-config' | 'event-config' | 'form-builder'
+  >('dashboard');
   const [data, setData] = useState<LiveDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -229,6 +232,18 @@ export const AdminDashboard: React.FC = () => {
           >
             Event Config
           </button>
+
+          <button
+            onClick={() => setActiveTab('form-builder')}
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
+              activeTab === 'form-builder'
+                ? 'bg-white text-indigo-600 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Form Builder</span>
+          </button>
         </div>
       </div>
 
@@ -245,6 +260,7 @@ export const AdminDashboard: React.FC = () => {
       {activeTab === 'results' && <ResultsConfigTab />}
       {activeTab === 'school-config' && <SchoolConfigTab />}
       {activeTab === 'event-config' && <EventConfigTab />}
+      {activeTab === 'form-builder' && <RegistrationFormBuilderTab />}
 
       {activeTab === 'dashboard' && data && (
         <div className="space-y-6">

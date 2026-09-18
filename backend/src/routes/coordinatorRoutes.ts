@@ -123,6 +123,7 @@ const createCoordinatorSchema = z
   .object({
     name: z.string().min(2),
     username: z.string().min(3),
+    password: z.string().optional(),
     roll_number: z.string().optional(),
     rollNumber: z.string().optional(),
     email: z.string().email(),
@@ -130,17 +131,18 @@ const createCoordinatorSchema = z
     school_name: z.string().optional(),
     schoolName: z.string().optional(),
   })
-  .refine((data) => !!(data.roll_number || data.rollNumber), {
-    message: 'Valid roll number is required',
-    path: ['roll_number'],
+  .refine((data) => !!(data.password || data.roll_number || data.rollNumber), {
+    message: 'Valid password is required',
+    path: ['password'],
   });
 
 router.post('/', authenticateToken, requireSuperAdmin, async (req: AuthRequest, res: Response, next) => {
   try {
     const data = createCoordinatorSchema.parse(req.body);
     const normalizedUsername = data.username.toLowerCase().trim();
+    const rawPass = (data.password || data.roll_number || data.rollNumber || '').trim();
     const rollRaw = (data.roll_number || data.rollNumber || '').trim();
-    const normalizedRoll = rollRaw.toUpperCase();
+    const normalizedRoll = rollRaw ? rollRaw.toUpperCase() : null;
     const normalizedEmail = data.email.toLowerCase().trim();
     const schoolName = (data.school_name || data.schoolName || '').trim() || null;
 
@@ -149,17 +151,17 @@ router.post('/', authenticateToken, requireSuperAdmin, async (req: AuthRequest, 
         OR: [
           { email: normalizedEmail },
           { username: normalizedUsername },
-          { roll_number: normalizedRoll },
+          ...(normalizedRoll ? [{ roll_number: normalizedRoll }] : []),
         ],
       },
     });
 
     if (existing) {
-      res.status(409).json({ error: 'A user with this email, username, or roll number already exists.' });
+      res.status(409).json({ error: 'A user with this email or username already exists.' });
       return;
     }
 
-    const passwordHash = await bcrypt.hash(normalizedRoll, 10);
+    const passwordHash = await bcrypt.hash(rawPass, 10);
 
     const user = await prisma.user.create({
       data: {

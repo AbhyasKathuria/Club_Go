@@ -48,6 +48,7 @@ model Event {
   min_team_size        Int           @default(1)
   max_team_size        Int           @default(4)
   allowed_email_domain String?
+  form_config          String?
   created_at           DateTime      @default(now())
   updated_at           DateTime      @updatedAt
   teams                Team[]
@@ -63,6 +64,8 @@ model Team {
   team_name       String
   team_size       Int
   qr_token        String          @unique @default(uuid())
+  leader_phone    String?
+  custom_fields   String?
   checked_in      Boolean         @default(false)
   checked_in_at   DateTime?
   is_deleted      Boolean         @default(false)
@@ -85,9 +88,11 @@ model Participant {
   id                String          @id @default(uuid())
   team_id           String
   name              String
+  roll_number       String?
   university_email  String
   phone             String
   qr_code_token     String          @unique @default(uuid())
+  custom_fields     String?
   attendance_status String          @default("NOT_ATTENDED")
   checked_in_at     DateTime?
   is_deleted        Boolean         @default(false)
@@ -102,6 +107,7 @@ model Participant {
   @@index([team_id])
   @@index([qr_code_token])
   @@index([university_email])
+  @@index([roll_number])
   @@map("participants")
 }
 

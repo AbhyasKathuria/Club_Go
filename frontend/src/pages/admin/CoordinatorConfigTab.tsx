@@ -30,7 +30,7 @@ export const CoordinatorConfigTab: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newUsername, setNewUsername] = useState('');
-  const [newRoll, setNewRoll] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newSchool, setNewSchool] = useState('');
@@ -87,15 +87,15 @@ export const CoordinatorConfigTab: React.FC = () => {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Delete coordinator record for "${name}"?`)) {
+    if (!window.confirm(`Permanently remove Student Co-ordinator "${name}"? This cannot be undone.`)) {
       return;
     }
     setProcessingId(id);
     setMessage(null);
     setError(null);
     try {
-      await api.deleteCoordinator(id);
-      setMessage(`Coordinator record for "${name}" removed.`);
+      const res = await api.deleteCoordinator(id);
+      setMessage(res.message || `Coordinator removed.`);
       setTimeout(() => setMessage(null), 4000);
       await loadCoordinators();
     } catch (err: any) {
@@ -114,7 +114,8 @@ export const CoordinatorConfigTab: React.FC = () => {
       await api.createCoordinator({
         name: newName.trim(),
         username: newUsername.trim(),
-        roll_number: newRoll.trim(),
+        password: newPassword.trim(),
+        roll_number: newPassword.trim(),
         email: newEmail.trim(),
         phone: newPhone.trim() || undefined,
         school_name: newSchool.trim() || undefined,
@@ -123,7 +124,7 @@ export const CoordinatorConfigTab: React.FC = () => {
       setShowAddModal(false);
       setNewName('');
       setNewUsername('');
-      setNewRoll('');
+      setNewPassword('');
       setNewEmail('');
       setNewPhone('');
       setNewSchool('');
@@ -386,13 +387,13 @@ export const CoordinatorConfigTab: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Roll Number</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Password</label>
                   <input
-                    type="text"
-                    value={newRoll}
-                    onChange={(e) => setNewRoll(e.target.value)}
-                    placeholder="e.g. 20231CSE0412"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 uppercase font-mono focus:outline-none focus:border-blue-500"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter login password"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 font-mono focus:outline-none focus:border-blue-500"
                     required
                   />
                 </div>
@@ -423,7 +424,7 @@ export const CoordinatorConfigTab: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">School / Faculty</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">School</label>
                   <input
                     type="text"
                     value={newSchool}

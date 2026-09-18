@@ -30,6 +30,7 @@ export interface Event {
   min_team_size: number;
   max_team_size: number;
   allowed_email_domain?: string | null;
+  form_config?: string | null;
   createdAt?: string;
 }
 
@@ -38,6 +39,8 @@ export interface Participant {
   name: string;
   email: string;
   phone: string;
+  rollNumber?: string;
+  roll_number?: string;
   qrToken: string;
   attendanceStatus: AttendanceStatus;
   checkedInAt?: string | null;

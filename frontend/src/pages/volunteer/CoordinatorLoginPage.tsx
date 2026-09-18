@@ -5,9 +5,9 @@ import { Lock, User, IdCard, AlertCircle, ArrowRight, ShieldCheck } from 'lucide
 export const CoordinatorLoginPage: React.FC = () => {
   const { loginCoordinator } = useAuth();
 
-  // Login form state (Username + Roll Number)
+  // Login form state (Username + Password)
   const [username, setUsername] = useState('');
-  const [rollNumber, setRollNumber] = useState('');
+  const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +17,7 @@ export const CoordinatorLoginPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await loginCoordinator(username.trim(), rollNumber.trim());
+      await loginCoordinator(username.trim(), password.trim());
     } catch (err: any) {
       setError(err.message || 'Login failed. Please verify credentials or contact the Super Admin.');
     } finally {
@@ -27,7 +27,7 @@ export const CoordinatorLoginPage: React.FC = () => {
 
   const handleQuickCoordinatorFill = () => {
     setUsername('coordinator1');
-    setRollNumber('20231CSE0001');
+    setPassword('20231CSE0001');
     setError(null);
   };
 
@@ -92,21 +92,21 @@ export const CoordinatorLoginPage: React.FC = () => {
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              University Roll Number
+              Password
             </label>
             <div className="relative">
-              <IdCard className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               <input
-                type="text"
-                value={rollNumber}
-                onChange={(e) => setRollNumber(e.target.value)}
-                placeholder="e.g. 20231CSE0001"
-                className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-blue-500 uppercase font-mono"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your coordinator password"
+                className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:border-blue-500 font-mono"
                 required
               />
             </div>
             <p className="text-[11px] text-slate-400 mt-1">
-              Enter your official university roll number as registered by the Admin
+              Enter the password allocated to you by the Super Admin
             </p>
           </div>
 

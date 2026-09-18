@@ -59,32 +59,32 @@ router.post('/coordinator/register', async (req, res) => {
   });
 });
 
-// POST /api/auth/coordinator/login - Login via Username + Roll Number
+// POST /api/auth/coordinator/login - Login via Username + Password
 const coordinatorLoginSchema = z
   .object({
     username: z.string().min(1, 'Username is required'),
+    password: z.string().optional(),
     roll_number: z.string().optional(),
     rollNumber: z.string().optional(),
   })
-  .refine((data) => !!(data.roll_number || data.rollNumber), {
-    message: 'Roll number is required',
-    path: ['roll_number'],
+  .refine((data) => !!(data.password || data.roll_number || data.rollNumber), {
+    message: 'Password is required',
+    path: ['password'],
   });
 
 router.post('/coordinator/login', async (req, res, next) => {
   try {
     const data = coordinatorLoginSchema.parse(req.body);
     const searchUser = data.username.toLowerCase().trim();
-    const rollRaw = (data.roll_number || data.rollNumber || '').trim();
-    const searchRoll = rollRaw.toUpperCase();
+    const passwordInput = (data.password || data.roll_number || data.rollNumber || '').trim();
 
-    // Search by username or roll number
+    // Search by username or email
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { username: searchUser },
-          { roll_number: searchRoll },
           { email: searchUser },
+          { roll_number: searchUser.toUpperCase() },
         ],
       },
     });
@@ -94,14 +94,14 @@ router.post('/coordinator/login', async (req, res, next) => {
       return;
     }
 
-    // Verify roll number matches
-    const rollMatch =
-      user.roll_number?.toUpperCase().trim() === searchRoll ||
-      (await bcrypt.compare(rollRaw, user.password_hash)) ||
-      (await bcrypt.compare(searchRoll, user.password_hash));
+    // Verify password matches bcrypt hash, or matches user.roll_number for legacy accounts
+    const passwordValid =
+      (await bcrypt.compare(passwordInput, user.password_hash)) ||
+      (await bcrypt.compare(passwordInput.toUpperCase(), user.password_hash)) ||
+      (user.roll_number && user.roll_number.toUpperCase() === passwordInput.toUpperCase());
 
-    if (!rollMatch) {
-      res.status(401).json({ error: 'Invalid username or roll number.' });
+    if (!passwordValid) {
+      res.status(401).json({ error: 'Invalid username or password.' });
       return;
     }
 

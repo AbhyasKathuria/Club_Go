@@ -57,6 +57,7 @@ const eventSchema = z.object({
   min_team_size: z.number().int().min(1).default(1),
   max_team_size: z.number().int().min(1).default(4),
   allowed_email_domain: z.string().nullable().optional(),
+  form_config: z.string().nullable().optional(),
 });
 
 // POST /api/events - Create new event (Superadmin)
@@ -74,6 +75,7 @@ router.post('/', authenticateToken, requireSuperAdmin, async (req, res, next) =>
         min_team_size: data.min_team_size,
         max_team_size: data.max_team_size,
         allowed_email_domain: data.allowed_email_domain,
+        form_config: data.form_config,
       },
     });
     res.status(201).json(event);

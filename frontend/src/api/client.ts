@@ -112,7 +112,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  loginCoordinator: (credentials: { username: string; roll_number: string }) =>
+  loginCoordinator: (credentials: { username: string; password?: string; roll_number?: string }) =>
     request<{ token: string; user: any }>('/auth/coordinator/login', {
       method: 'POST',
       body: JSON.stringify(credentials),

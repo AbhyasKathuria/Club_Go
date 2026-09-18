@@ -1,10 +1,39 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { api } from '../../api/client';
 import { School, Event } from '../../types';
 import { getSchoolTheme, DEFAULT_SCHOOL_COLORS } from '../../utils/themeHelper';
 import { QRPassCard } from '../../components/QRPassCard';
-import { Users, Sparkles, Building2, AlertCircle, ArrowRight, Shield, Mail, Phone, UserCheck, UserPlus, Trash2 } from 'lucide-react';
+import { FormConfig, DEFAULT_FORM_CONFIG } from '../admin/RegistrationFormBuilderTab';
+import {
+  Users,
+  Sparkles,
+  Building2,
+  AlertCircle,
+  ArrowRight,
+  Shield,
+  Mail,
+  Phone,
+  UserCheck,
+  UserPlus,
+  Trash2,
+  IdCard,
+  GraduationCap,
+  BookOpen,
+  Bookmark,
+  CheckCircle2,
+} from 'lucide-react';
+
+interface ParticipantData {
+  name: string;
+  rollNumber: string;
+  email: string;
+  universityEmail: string;
+  phone: string;
+  semester: string;
+  section: string;
+  customFields: Record<string, string>;
+}
 
 export const RegisterPage: React.FC = () => {
   const [event, setEvent] = useState<Event | null>(null);
@@ -17,10 +46,20 @@ export const RegisterPage: React.FC = () => {
 
   // Form State
   const [teamName, setTeamName] = useState('');
+  const [leaderPhone, setLeaderPhone] = useState('');
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>('');
   const [teamSize, setTeamSize] = useState<number>(1);
-  const [participants, setParticipants] = useState<Array<{ name: string; email: string; phone: string }>>([
-    { name: '', email: '', phone: '' },
+  const [participants, setParticipants] = useState<ParticipantData[]>([
+    {
+      name: '',
+      rollNumber: '',
+      email: '',
+      universityEmail: '',
+      phone: '',
+      semester: '',
+      section: '',
+      customFields: {},
+    },
   ]);
 
   // Success State
@@ -49,13 +88,41 @@ export const RegisterPage: React.FC = () => {
     loadActiveEvent();
   }, []);
 
+  // Parse Form Configuration
+  const formConfig: FormConfig = useMemo(() => {
+    if (event?.form_config) {
+      try {
+        const parsed = JSON.parse(event.form_config);
+        return {
+          fields: {
+            ...DEFAULT_FORM_CONFIG.fields,
+            ...(parsed.fields || {}),
+          },
+          custom_fields: parsed.custom_fields || [],
+        };
+      } catch (e) {
+        return DEFAULT_FORM_CONFIG;
+      }
+    }
+    return DEFAULT_FORM_CONFIG;
+  }, [event?.form_config]);
+
   const updateParticipantsCount = (count: number) => {
     setTeamSize(count);
     setError(null);
     setParticipants((prev) => {
       const next = [...prev];
       while (next.length < count) {
-        next.push({ name: '', email: '', phone: '' });
+        next.push({
+          name: '',
+          rollNumber: '',
+          email: '',
+          universityEmail: '',
+          phone: '',
+          semester: '',
+          section: '',
+          customFields: {},
+        });
       }
       return next.slice(0, count);
     });
@@ -68,7 +135,19 @@ export const RegisterPage: React.FC = () => {
       return;
     }
     setError(null);
-    const next = [...participants, { name: '', email: '', phone: '' }];
+    const next = [
+      ...participants,
+      {
+        name: '',
+        rollNumber: '',
+        email: '',
+        universityEmail: '',
+        phone: '',
+        semester: '',
+        section: '',
+        customFields: {},
+      },
+    ];
     setParticipants(next);
     setTeamSize(next.length);
   };
@@ -76,7 +155,11 @@ export const RegisterPage: React.FC = () => {
   const removeParticipant = (index: number) => {
     if (!event) return;
     if (participants.length <= event.min_team_size) {
-      setError(`Minimum team size for this event is ${event.min_team_size} member${event.min_team_size > 1 ? 's' : ''}.`);
+      setError(
+        `Minimum team size for this event is ${event.min_team_size} member${
+          event.min_team_size > 1 ? 's' : ''
+        }.`
+      );
       return;
     }
     setError(null);
@@ -85,10 +168,28 @@ export const RegisterPage: React.FC = () => {
     setTeamSize(next.length);
   };
 
-  const handleParticipantChange = (index: number, field: 'name' | 'email' | 'phone', value: string) => {
+  const handleParticipantChange = (
+    index: number,
+    field: keyof Omit<ParticipantData, 'customFields'>,
+    value: string
+  ) => {
     setParticipants((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const handleCustomFieldChange = (index: number, fieldId: string, value: string) => {
+    setParticipants((prev) => {
+      const next = [...prev];
+      next[index] = {
+        ...next[index],
+        customFields: {
+          ...next[index].customFields,
+          [fieldId]: value,
+        },
+      };
       return next;
     });
   };
@@ -114,8 +215,13 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
-    if (!selectedSchoolId) {
+    if (formConfig.fields.school.enabled && !selectedSchoolId) {
       showError('Please select a school.');
+      return;
+    }
+
+    if (formConfig.fields.leader_phone.enabled && formConfig.fields.leader_phone.required && !leaderPhone.trim()) {
+      showError('Please provide the team leader contact phone number.');
       return;
     }
 
@@ -123,29 +229,90 @@ export const RegisterPage: React.FC = () => {
 
     for (let i = 0; i < participants.length; i++) {
       const p = participants[i];
-      if (!p.name.trim()) {
-        showError(`Please enter the full name for Member ${i + 1}.`);
+      const memberLabel = i === 0 ? 'Team Leader' : `Member ${i + 1}`;
+
+      // Full name
+      if (formConfig.fields.name.enabled && formConfig.fields.name.required && !p.name.trim()) {
+        showError(`Please enter the full name for ${memberLabel}.`);
         return;
       }
-      if (!p.email.trim()) {
-        showError(`Please enter the email address for Member ${i + 1}.`);
+
+      // Roll Number
+      if (formConfig.fields.roll_number.enabled && formConfig.fields.roll_number.required && !p.rollNumber.trim()) {
+        showError(`Please enter the university roll number for ${memberLabel}.`);
         return;
       }
-      if (!emailRegex.test(p.email.trim())) {
-        showError(`"${p.email.trim()}" is not a valid email address for Member ${i + 1}. Please provide a valid email (e.g. yourname@university.edu).`);
+
+      // Personal Email
+      if (formConfig.fields.email.enabled) {
+        if (formConfig.fields.email.required && !p.email.trim()) {
+          showError(`Please enter the email address for ${memberLabel}.`);
+          return;
+        }
+        if (p.email.trim() && !emailRegex.test(p.email.trim())) {
+          showError(`"${p.email.trim()}" is not a valid email address for ${memberLabel}.`);
+          return;
+        }
+      }
+
+      // University Email
+      if (formConfig.fields.university_email.enabled) {
+        if (formConfig.fields.university_email.required && !p.universityEmail.trim()) {
+          showError(`Please enter the university campus email for ${memberLabel}.`);
+          return;
+        }
+        if (p.universityEmail.trim() && !emailRegex.test(p.universityEmail.trim())) {
+          showError(`"${p.universityEmail.trim()}" is not a valid email address for ${memberLabel}.`);
+          return;
+        }
+      }
+
+      // Contact phone
+      if (formConfig.fields.phone.enabled && formConfig.fields.phone.required && !p.phone.trim()) {
+        showError(`Please enter the contact phone number for ${memberLabel}.`);
         return;
       }
-      if (!p.phone.trim()) {
-        showError(`Please enter the contact phone number for Member ${i + 1}.`);
+
+      // Semester
+      if (formConfig.fields.semester.enabled && formConfig.fields.semester.required && !p.semester.trim()) {
+        showError(`Please specify the semester/year for ${memberLabel}.`);
         return;
+      }
+
+      // Section
+      if (formConfig.fields.section.enabled && formConfig.fields.section.required && !p.section.trim()) {
+        showError(`Please specify the section for ${memberLabel}.`);
+        return;
+      }
+
+      // Custom fields required check
+      if (formConfig.custom_fields) {
+        for (const cf of formConfig.custom_fields) {
+          if (cf.required && !p.customFields[cf.id]?.trim()) {
+            showError(`Please fill out "${cf.label}" for ${memberLabel}.`);
+            return;
+          }
+        }
       }
     }
 
     // Check for duplicate emails within this submission
-    const cleanedEmails = participants.map((p) => p.email.trim().toLowerCase());
-    const duplicates = cleanedEmails.filter((item, index) => cleanedEmails.indexOf(item) !== index);
-    if (duplicates.length > 0) {
-      showError(`Each team member must have a unique email address. Duplicate email detected: "${duplicates[0]}".`);
+    const cleanedEmails = participants
+      .map((p) => (p.email || p.universityEmail || '').trim().toLowerCase())
+      .filter((e) => e.length > 0);
+    const dupEmail = cleanedEmails.find((item, index) => cleanedEmails.indexOf(item) !== index);
+    if (dupEmail) {
+      showError(`Each team member must have a unique email address. Duplicate detected: "${dupEmail}".`);
+      return;
+    }
+
+    // Check for duplicate roll numbers within this submission
+    const cleanedRolls = participants
+      .map((p) => p.rollNumber.trim().toUpperCase())
+      .filter((r) => r.length > 0);
+    const dupRoll = cleanedRolls.find((item, index) => cleanedRolls.indexOf(item) !== index);
+    if (dupRoll) {
+      showError(`Each team member must have a unique roll number. Duplicate detected: "${dupRoll}".`);
       return;
     }
 
@@ -157,15 +324,23 @@ export const RegisterPage: React.FC = () => {
         eventId: event?.id,
         schoolId: selectedSchoolId,
         teamName: teamName.trim(),
+        leaderPhone: leaderPhone.trim() || undefined,
         participants: participants.map((p) => ({
           name: p.name.trim(),
-          email: p.email.trim().toLowerCase(),
+          rollNumber: p.rollNumber.trim(),
+          roll_number: p.rollNumber.trim(),
+          email: (p.email || p.universityEmail).trim().toLowerCase(),
+          universityEmail: p.universityEmail.trim().toLowerCase(),
           phone: p.phone.trim(),
+          semester: p.semester.trim() || undefined,
+          section: p.section.trim() || undefined,
+          customFields: p.customFields,
         })),
       };
 
       const result = await api.registerTeam(payload);
       setRegisteredData(result);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
       // Trigger celebratory confetti
       confetti({
@@ -213,9 +388,9 @@ export const RegisterPage: React.FC = () => {
   // If registration was successful, show Confirmation / Pass view
   if (registeredData) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-10">
+      <div className="max-w-4xl mx-auto px-4 pt-6 pb-14">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wider mb-2 shadow-sm">
             <Sparkles className="w-4 h-4 text-emerald-600" />
             <span>Registration Confirmed</span>
           </div>
@@ -224,7 +399,9 @@ export const RegisterPage: React.FC = () => {
           </h1>
           <p className="text-slate-600 text-sm max-w-md mx-auto mt-2">
             Your registration passes have been generated and dispatched to{' '}
-            <strong className="text-slate-800">{registeredData.participants[0].email}</strong>.
+            <strong className="text-slate-800">
+              {registeredData.participants[0]?.email || 'your primary email'}
+            </strong>.
           </p>
         </div>
 
@@ -250,8 +427,10 @@ export const RegisterPage: React.FC = () => {
             onClick={() => {
               setRegisteredData(null);
               setTeamName('');
+              setLeaderPhone('');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="text-sm font-semibold text-slate-500 hover:text-slate-800"
+            className="text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
           >
             ← Register Another Team
           </button>
@@ -262,57 +441,54 @@ export const RegisterPage: React.FC = () => {
 
   // Active registration form
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className="max-w-3xl mx-auto px-4 py-8">
       
-      {/* Institutional Organizer Branding Banner */}
+      {/* Institutional Organizer Branding Banner: All 4 Logos in 1 Straight Row */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <div className="flex items-center space-x-3">
-            <img
-              src="/images/Presidency.png"
-              alt="Presidency University"
-              className="h-10 w-auto object-contain"
-            />
-            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
-            <img
-              src="/images/DSA NAAC.png"
-              alt="DSA NAAC A Accredited"
-              className="h-9 w-auto object-contain hidden sm:block"
-            />
-          </div>
+        <div className="flex items-center justify-between sm:justify-around gap-3 sm:gap-6 border-b border-slate-100 pb-4 overflow-x-auto">
+          {/* Presidency University */}
+          <img
+            src="/images/Presidency.png"
+            alt="Presidency University"
+            className="h-9 sm:h-10 w-auto object-contain flex-shrink-0"
+          />
 
-          <div className="flex items-center space-x-4">
+          <div className="h-7 w-px bg-slate-200 flex-shrink-0" />
+
+          {/* DSA NAAC A Accredited */}
+          <img
+            src="/images/DSA NAAC.png"
+            alt="DSA NAAC A Accredited"
+            className="h-8 sm:h-9 w-auto object-contain flex-shrink-0"
+          />
+
+          <div className="h-7 w-px bg-slate-200 flex-shrink-0" />
+
+          {/* Institution's Innovation Council */}
+          <img
+            src="/images/iiclogo.png"
+            alt="Institution's Innovation Council"
+            className="h-8 sm:h-9 w-auto object-contain flex-shrink-0"
+          />
+
+          <div className="h-7 w-px bg-slate-200 flex-shrink-0" />
+
+          {/* CogniCore Club */}
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <img
-              src="/images/iiclogo.png"
-              alt="Institution's Innovation Council"
-              className="h-9 w-auto object-contain"
+              src="/images/CogniCore Logo.png"
+              alt="CogniCore Club"
+              className="h-9 sm:h-10 w-auto object-contain"
             />
-            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
-            <div className="flex items-center space-x-2">
-              <img
-                src="/images/CogniCore Logo.png"
-                alt="CogniCore Club"
-                className="h-11 w-auto object-contain"
-              />
-              <div className="hidden md:block text-left">
-                <div className="text-xs font-black text-slate-800 tracking-tight leading-none">
-                  COGNICORE CLUB
-                </div>
-                <div className="text-[9px] font-semibold text-slate-400 tracking-wider uppercase mt-0.5">
-                  Where Intelligence Meets Innovation
-                </div>
-              </div>
-            </div>
+            <span className="text-xs sm:text-sm font-black text-slate-800 tracking-tight whitespace-nowrap hidden md:inline-block">
+              CogniCore Club
+            </span>
           </div>
         </div>
 
-        <div className="pt-3 flex items-center justify-between text-xs text-slate-500">
-          <span className="font-semibold text-slate-700">
-            Presidency University • Department of Student Affairs (DSA)
-          </span>
-          <span className="text-[11px] text-blue-600 font-bold hidden sm:inline-block">
-            Ministry of Education Initiative (IIC)
-          </span>
+        {/* Institutional subtitle */}
+        <div className="pt-3 text-center text-xs text-slate-600 font-semibold leading-relaxed">
+          Presidency University • Department of Student Affairs (DSA) • Presidency School of Information Science
         </div>
       </div>
 
@@ -371,59 +547,62 @@ export const RegisterPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-8">
         
         {/* Step 1: School Selection */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
-          <div className="flex items-center space-x-2.5 mb-4">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-              style={{ backgroundColor: schoolTheme.hex }}
-            >
-              1
+        {formConfig.fields.school.enabled && (
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+            <div className="flex items-center space-x-2.5 mb-4">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                style={{ backgroundColor: schoolTheme.hex }}
+              >
+                1
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">
+                  {formConfig.fields.school.label}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Determines your team's visual theme and pass branding
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Select Your School</h2>
-              <p className="text-xs text-slate-500">
-                Determines your team's visual theme and pass branding
-              </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {schools.map((s) => {
+                const isSelected = selectedSchoolId === s.id;
+
+                return (
+                  <button
+                    type="button"
+                    key={s.id}
+                    onClick={() => setSelectedSchoolId(s.id)}
+                    className={`flex items-center space-x-3 p-3.5 rounded-xl border text-left transition-all ${
+                      isSelected
+                        ? 'border-2 shadow-md'
+                        : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                    }`}
+                    style={{
+                      borderColor: isSelected ? s.color_code : undefined,
+                      backgroundColor: isSelected ? `${s.color_code}10` : undefined,
+                    }}
+                  >
+                    <div
+                      className="w-4 h-10 rounded-md flex-shrink-0"
+                      style={{ backgroundColor: s.color_code }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-black tracking-wider uppercase" style={{ color: s.color_code }}>
+                        {s.code}
+                      </div>
+                      <div className="text-sm font-semibold text-slate-800 truncate">
+                        {s.name}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {schools.map((s) => {
-              const theme = getSchoolTheme(s.code, s.color_code);
-              const isSelected = selectedSchoolId === s.id;
-
-              return (
-                <button
-                  type="button"
-                  key={s.id}
-                  onClick={() => setSelectedSchoolId(s.id)}
-                  className={`flex items-center space-x-3 p-3.5 rounded-xl border text-left transition-all ${
-                    isSelected
-                      ? 'border-2 shadow-md'
-                      : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
-                  }`}
-                  style={{
-                    borderColor: isSelected ? s.color_code : undefined,
-                    backgroundColor: isSelected ? `${s.color_code}10` : undefined,
-                  }}
-                >
-                  <div
-                    className="w-4 h-10 rounded-md flex-shrink-0"
-                    style={{ backgroundColor: s.color_code }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-black tracking-wider uppercase" style={{ color: s.color_code }}>
-                      {s.code}
-                    </div>
-                    <div className="text-sm font-semibold text-slate-800 truncate">
-                      {s.name}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        )}
 
         {/* Step 2: Team Details */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
@@ -432,7 +611,7 @@ export const RegisterPage: React.FC = () => {
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
               style={{ backgroundColor: schoolTheme.hex }}
             >
-              2
+              {formConfig.fields.school.enabled ? '2' : '1'}
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900">Team Details</h2>
@@ -445,7 +624,7 @@ export const RegisterPage: React.FC = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Team Name
+                Team Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -456,6 +635,27 @@ export const RegisterPage: React.FC = () => {
                 required
               />
             </div>
+
+            {/* Optional Team Leader Phone if enabled */}
+            {formConfig.fields.leader_phone.enabled && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  {formConfig.fields.leader_phone.label}{' '}
+                  {formConfig.fields.leader_phone.required && <span className="text-rose-500">*</span>}
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="tel"
+                    value={leaderPhone}
+                    onChange={(e) => setLeaderPhone(e.target.value)}
+                    placeholder="+91 9876543210"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 text-sm font-medium"
+                    required={formConfig.fields.leader_phone.required}
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -507,7 +707,7 @@ export const RegisterPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Step 3: Member Roster */}
+        {/* Step 3: Member Roster (Dynamically rendered fields) */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2.5">
@@ -515,7 +715,7 @@ export const RegisterPage: React.FC = () => {
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
                 style={{ backgroundColor: schoolTheme.hex }}
               >
-                3
+                {formConfig.fields.school.enabled ? '3' : '2'}
               </div>
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Member Information</h2>
@@ -570,100 +770,185 @@ export const RegisterPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      value={p.name}
-                      onChange={(e) => handleParticipantChange(idx, 'name', e.target.value)}
-                      placeholder="e.g. Alex Morgan"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                      required
-                    />
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  
+                  {/* Full Name */}
+                  {formConfig.fields.name.enabled && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        {formConfig.fields.name.label}{' '}
+                        {formConfig.fields.name.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      <input
+                        type="text"
+                        value={p.name}
+                        onChange={(e) => handleParticipantChange(idx, 'name', e.target.value)}
+                        placeholder="e.g. Alex Morgan"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                        required={formConfig.fields.name.required}
+                      />
+                    </div>
+                  )}
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      University Email
-                    </label>
-                    <input
-                      type="email"
-                      value={p.email}
-                      onChange={(e) => handleParticipantChange(idx, 'email', e.target.value)}
-                      placeholder={
-                        event.allowed_email_domain
-                          ? `id@${event.allowed_email_domain}`
-                          : 'alex@university.edu'
-                      }
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                      required
-                    />
-                  </div>
+                  {/* University Roll Number */}
+                  {formConfig.fields.roll_number.enabled && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        {formConfig.fields.roll_number.label}{' '}
+                        {formConfig.fields.roll_number.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      <input
+                        type="text"
+                        value={p.rollNumber}
+                        onChange={(e) => handleParticipantChange(idx, 'rollNumber', e.target.value)}
+                        placeholder="e.g. 20231CSE0412"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono uppercase focus:outline-none focus:border-blue-500 bg-white"
+                        required={formConfig.fields.roll_number.required}
+                      />
+                    </div>
+                  )}
 
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={p.phone}
-                      onChange={(e) => handleParticipantChange(idx, 'phone', e.target.value)}
-                      placeholder="+1 (555) 000-0000"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                      required
-                    />
-                  </div>
+                  {/* Personal Email */}
+                  {formConfig.fields.email.enabled && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        {formConfig.fields.email.label}{' '}
+                        {formConfig.fields.email.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      <input
+                        type="email"
+                        value={p.email}
+                        onChange={(e) => handleParticipantChange(idx, 'email', e.target.value)}
+                        placeholder="alex@example.com"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                        required={formConfig.fields.email.required}
+                      />
+                    </div>
+                  )}
+
+                  {/* University Email */}
+                  {formConfig.fields.university_email.enabled && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        {formConfig.fields.university_email.label}{' '}
+                        {formConfig.fields.university_email.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      <input
+                        type="email"
+                        value={p.universityEmail}
+                        onChange={(e) => handleParticipantChange(idx, 'universityEmail', e.target.value)}
+                        placeholder={
+                          event.allowed_email_domain
+                            ? `id@${event.allowed_email_domain}`
+                            : 'alex@university.edu'
+                        }
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                        required={formConfig.fields.university_email.required}
+                      />
+                    </div>
+                  )}
+
+                  {/* Contact Phone */}
+                  {formConfig.fields.phone.enabled && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        {formConfig.fields.phone.label}{' '}
+                        {formConfig.fields.phone.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      <input
+                        type="tel"
+                        value={p.phone}
+                        onChange={(e) => handleParticipantChange(idx, 'phone', e.target.value)}
+                        placeholder="+91 9876543210"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                        required={formConfig.fields.phone.required}
+                      />
+                    </div>
+                  )}
+
+                  {/* Semester */}
+                  {formConfig.fields.semester.enabled && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        {formConfig.fields.semester.label}{' '}
+                        {formConfig.fields.semester.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      <input
+                        type="text"
+                        value={p.semester}
+                        onChange={(e) => handleParticipantChange(idx, 'semester', e.target.value)}
+                        placeholder="e.g. 5th Semester"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                        required={formConfig.fields.semester.required}
+                      />
+                    </div>
+                  )}
+
+                  {/* Section */}
+                  {formConfig.fields.section.enabled && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        {formConfig.fields.section.label}{' '}
+                        {formConfig.fields.section.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      <input
+                        type="text"
+                        value={p.section}
+                        onChange={(e) => handleParticipantChange(idx, 'section', e.target.value)}
+                        placeholder="e.g. CSE-A"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                        required={formConfig.fields.section.required}
+                      />
+                    </div>
+                  )}
+
+                  {/* Custom Fields */}
+                  {formConfig.custom_fields &&
+                    formConfig.custom_fields.map((cf) => (
+                      <div key={cf.id}>
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          {cf.label} {cf.required && <span className="text-rose-500">*</span>}
+                        </label>
+                        <input
+                          type={cf.type === 'number' ? 'number' : 'text'}
+                          value={p.customFields[cf.id] || ''}
+                          onChange={(e) => handleCustomFieldChange(idx, cf.id, e.target.value)}
+                          placeholder={`Enter ${cf.label}`}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                          required={cf.required}
+                        />
+                      </div>
+                    ))}
+
                 </div>
               </div>
             ))}
+          </div>
 
-            {participants.length < event.max_team_size && (
+          {participants.length < event.max_team_size && (
+            <div className="mt-4 text-center sm:hidden">
               <button
                 type="button"
                 onClick={addParticipant}
-                className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/30 text-slate-600 hover:text-blue-700 text-xs font-bold flex items-center justify-center space-x-2 transition-all"
+                className="w-full py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all"
               >
-                <UserPlus className="w-4 h-4" />
-                <span>+ Add Another Team Member ({participants.length}/{event.max_team_size})</span>
+                + Add Member
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Bottom Error Banner if any */}
-        {error && (
-          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center justify-center space-x-2 text-center shadow-xs">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
-            <span>{error}</span>
-          </div>
-        )}
-
         {/* Submit Action */}
-        <div className="text-center pt-2">
+        <div className="pt-2">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-8 py-4 text-white font-bold text-base rounded-xl shadow-lg transition-all transform active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-3.5 px-6 rounded-xl text-white font-bold text-sm sm:text-base shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
             style={{ backgroundColor: schoolTheme.hex }}
           >
-            {isSubmitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Registering Team...</span>
-              </>
-            ) : (
-              <>
-                <span>Complete Registration & Get Passes</span>
-                <ArrowRight className="w-5 h-5" />
-              </>
-            )}
+            <span>{isSubmitting ? 'Registering Team...' : 'Complete Registration & Get Passes'}</span>
+            <ArrowRight className="w-5 h-5" />
           </button>
-          <p className="text-xs text-slate-400 mt-2">
-            Instant QR pass generation • University verification required at gate
-          </p>
         </div>
 
       </form>

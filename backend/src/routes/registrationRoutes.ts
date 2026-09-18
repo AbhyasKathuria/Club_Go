@@ -10,19 +10,27 @@ import { EventStatus, AttendanceStatus } from '../types/enums';
 
 const router = Router();
 
+const participantSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().optional().or(z.literal('')),
+  university_email: z.string().optional().or(z.literal('')),
+  universityEmail: z.string().optional().or(z.literal('')),
+  roll_number: z.string().optional().or(z.literal('')),
+  rollNumber: z.string().optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')),
+  semester: z.string().optional().or(z.literal('')),
+  section: z.string().optional().or(z.literal('')),
+  customFields: z.record(z.any()).optional(),
+  custom_fields: z.record(z.any()).optional(),
+});
+
 const registrationSchema = z.object({
   eventId: z.string().optional(),
   schoolId: z.string().min(1),
   teamName: z.string().min(2, 'Team name must be at least 2 characters').max(50),
-  participants: z
-    .array(
-      z.object({
-        name: z.string().min(2, 'Name is required'),
-        email: z.string().email('Valid email is required'),
-        phone: z.string().min(6, 'Valid phone number is required'),
-      })
-    )
-    .min(1, 'At least 1 participant is required'),
+  leaderPhone: z.string().optional().or(z.literal('')),
+  leader_phone: z.string().optional().or(z.literal('')),
+  participants: z.array(participantSchema).min(1, 'At least 1 participant is required'),
 });
 
 // POST /api/registrations - Public registration
@@ -62,12 +70,15 @@ router.post('/', registrationRateLimiter, async (req, res, next) => {
     if (event.allowed_email_domain) {
       const domain = event.allowed_email_domain.toLowerCase().replace(/^@/, '');
       for (const p of data.participants) {
-        const emailDomain = p.email.split('@')[1]?.toLowerCase();
-        if (emailDomain !== domain) {
-          res.status(400).json({
-            error: `All emails must belong to @${domain}. Invalid email: ${p.email}`,
-          });
-          return;
+        const mail = (p.universityEmail || p.university_email || p.email || '').trim().toLowerCase();
+        if (mail) {
+          const emailDomain = mail.split('@')[1]?.toLowerCase();
+          if (emailDomain !== domain) {
+            res.status(400).json({
+              error: `All emails must belong to @${domain}. Invalid email: ${mail}`,
+            });
+            return;
+          }
         }
       }
     }
@@ -83,11 +94,25 @@ router.post('/', registrationRateLimiter, async (req, res, next) => {
     }
 
     // 5. Check for duplicate emails within the submitted team roster
-    const emails = data.participants.map((p) => p.email.trim().toLowerCase());
+    const emails = data.participants
+      .map((p) => (p.universityEmail || p.university_email || p.email || '').trim().toLowerCase())
+      .filter((e) => e.length > 0);
     const uniqueEmailsInRoster = new Set(emails);
     if (uniqueEmailsInRoster.size !== emails.length) {
       res.status(400).json({
         error: 'Each team member must have a distinct email address. Duplicate emails detected in your team submission.',
+      });
+      return;
+    }
+
+    // Check for duplicate roll numbers if provided
+    const rollNumbers = data.participants
+      .map((p) => (p.rollNumber || p.roll_number || '').trim().toUpperCase())
+      .filter((r) => r.length > 0);
+    const uniqueRolls = new Set(rollNumbers);
+    if (uniqueRolls.size !== rollNumbers.length) {
+      res.status(400).json({
+        error: 'Each team member must have a distinct roll number. Duplicate roll numbers detected in your team submission.',
       });
       return;
     }
@@ -136,6 +161,8 @@ router.post('/', registrationRateLimiter, async (req, res, next) => {
     const participantTokens = data.participants.map(() => generateParticipantToken());
 
     // 7. Atomic Database Transaction
+    const leaderPhone = (data.leaderPhone || data.leader_phone || data.participants[0]?.phone || '').trim() || null;
+
     const result = await prisma.$transaction(async (tx) => {
       const team = await tx.team.create({
         data: {
@@ -144,14 +171,28 @@ router.post('/', registrationRateLimiter, async (req, res, next) => {
           team_name: data.teamName,
           team_size: data.participants.length,
           qr_token: teamToken,
+          leader_phone: leaderPhone,
           participants: {
-            create: data.participants.map((p, idx) => ({
-              name: p.name.trim(),
-              university_email: p.email.trim().toLowerCase(),
-              phone: p.phone.trim(),
-              qr_code_token: participantTokens[idx],
-              attendance_status: AttendanceStatus.NOT_ATTENDED,
-            })),
+            create: data.participants.map((p, idx) => {
+              const pEmail = (p.universityEmail || p.university_email || p.email || '').trim().toLowerCase();
+              const pRoll = (p.rollNumber || p.roll_number || '').trim() || null;
+              const pPhone = (p.phone || '').trim();
+              const customData = {
+                ...(p.customFields || p.custom_fields || {}),
+                ...(p.semester ? { semester: p.semester } : {}),
+                ...(p.section ? { section: p.section } : {}),
+              };
+
+              return {
+                name: p.name.trim(),
+                roll_number: pRoll,
+                university_email: pEmail || `member${idx + 1}_${teamToken.toLowerCase()}@pu.edu`,
+                phone: pPhone,
+                custom_fields: Object.keys(customData).length > 0 ? JSON.stringify(customData) : null,
+                qr_code_token: participantTokens[idx],
+                attendance_status: AttendanceStatus.NOT_ATTENDED,
+              };
+            }),
           },
         },
         include: {
@@ -170,20 +211,23 @@ router.post('/', registrationRateLimiter, async (req, res, next) => {
     );
 
     // 9. Dispatch real email asynchronously (non-blocking)
-    const primaryContactEmail = data.participants[0].email;
-    sendRegistrationConfirmationEmail({
-      toEmail: primaryContactEmail,
-      teamName: result.team_name,
-      schoolName: school.name,
-      schoolColor: school.color_code,
-      eventName: event.name,
-      teamToken: result.qr_token,
-      participants: result.participants.map((p) => ({
-        name: p.name,
-        email: p.university_email,
-        qrToken: p.qr_code_token,
-      })),
-    }).catch((err) => console.error('Failed to send confirmation email:', err));
+    const primaryContact = data.participants[0];
+    const primaryContactEmail = (primaryContact?.universityEmail || primaryContact?.university_email || primaryContact?.email || '').trim().toLowerCase();
+    if (primaryContactEmail) {
+      sendRegistrationConfirmationEmail({
+        toEmail: primaryContactEmail,
+        teamName: result.team_name,
+        schoolName: school.name,
+        schoolColor: school.color_code,
+        eventName: event.name,
+        teamToken: result.qr_token,
+        participants: result.participants.map((p) => ({
+          name: p.name,
+          email: p.university_email,
+          qrToken: p.qr_code_token,
+        })),
+      }).catch((err) => console.error('Failed to send confirmation email:', err));
+    }
 
     // 10. Broadcast updated stats
     const totalTeams = await prisma.team.count({ where: { event_id: event.id, is_deleted: false } });
@@ -209,6 +253,8 @@ router.post('/', registrationRateLimiter, async (req, res, next) => {
       participants: result.participants.map((p, idx) => ({
         id: p.id,
         name: p.name,
+        rollNumber: p.roll_number,
+        roll_number: p.roll_number,
         email: p.university_email,
         phone: p.phone,
         qrToken: p.qr_code_token,
@@ -247,6 +293,8 @@ router.get('/confirmation/:teamId', async (req, res, next) => {
       team.participants.map(async (p) => ({
         id: p.id,
         name: p.name,
+        rollNumber: p.roll_number,
+        roll_number: p.roll_number,
         email: p.university_email,
         phone: p.phone,
         qrToken: p.qr_code_token,

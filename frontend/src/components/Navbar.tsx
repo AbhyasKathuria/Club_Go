@@ -34,10 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPortal, onSelectPortal })
           <div>
             <div className="flex items-center space-x-1.5">
               <span className="text-xl font-black tracking-tight text-slate-900">
-                Club<span className="text-blue-600">Go</span>
-              </span>
-              <span className="hidden lg:inline-block px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-700 rounded-full border border-blue-100 uppercase tracking-wider">
-                CogniCore
+                CogniCore <span className="text-blue-600">Club</span>
               </span>
             </div>
             <div className="text-[10px] font-semibold text-slate-500 hidden sm:block leading-none mt-0.5">

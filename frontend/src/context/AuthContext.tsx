@@ -7,7 +7,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  loginCoordinator: (username: string, roll_number: string) => Promise<User>;
+  loginCoordinator: (username: string, password: string) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
   isSuperAdmin: boolean;
@@ -46,8 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return res.user;
   };
 
-  const loginCoordinator = async (username: string, roll_number: string): Promise<User> => {
-    const res = await api.loginCoordinator({ username, roll_number });
+  const loginCoordinator = async (username: string, password: string): Promise<User> => {
+    const res = await api.loginCoordinator({ username, password });
     setAuthToken(res.token);
     setToken(res.token);
     setUser(res.user);

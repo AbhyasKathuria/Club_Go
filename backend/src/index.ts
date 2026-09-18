@@ -15,6 +15,8 @@ import registrationRoutes from './routes/registrationRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
 import exportRoutes from './routes/exportRoutes';
 import backupRoutes from './routes/backupRoutes';
+import coordinatorRoutes from './routes/coordinatorRoutes';
+import resultRoutes from './routes/resultRoutes';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -53,6 +55,8 @@ app.use('/api/registrations', registrationRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/backup', backupRoutes);
+app.use('/api/coordinators', coordinatorRoutes);
+app.use('/api/results', resultRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

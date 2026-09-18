@@ -31,38 +31,48 @@ async function main() {
 
   const superAdmin = await prisma.user.upsert({
     where: { email: 'admin@clubgo.edu' },
-    update: {},
+    update: { is_approved: true },
     create: {
       name: 'Super Coordinator',
       email: 'admin@clubgo.edu',
       password_hash: superAdminPassword,
       role: Role.SUPERADMIN,
+      is_approved: true,
     },
   });
 
   const faculty = await prisma.user.upsert({
     where: { email: 'faculty@clubgo.edu' },
-    update: {},
+    update: { is_approved: true },
     create: {
       name: 'Dr. Evelyn Reed (Faculty Lead)',
       email: 'faculty@clubgo.edu',
       password_hash: facultyPassword,
       role: Role.FACULTY,
+      is_approved: true,
     },
   });
 
   const volunteer = await prisma.user.upsert({
     where: { email: 'volunteer@clubgo.edu' },
-    update: {},
+    update: {
+      username: 'coordinator1',
+      roll_number: '20231CSE0001',
+      is_approved: true,
+      name: 'Alex Rivera (Lead Student Co-ordinator)',
+    },
     create: {
-      name: 'Alex Rivera (Lead Volunteer)',
+      name: 'Alex Rivera (Lead Student Co-ordinator)',
       email: 'volunteer@clubgo.edu',
+      username: 'coordinator1',
+      roll_number: '20231CSE0001',
       password_hash: volunteerPassword,
       role: Role.VOLUNTEER,
+      is_approved: true,
     },
   });
 
-  console.log('✅ Default users seeded (admin@clubgo.edu, faculty@clubgo.edu, volunteer@clubgo.edu)');
+  console.log('✅ Default users seeded (admin@clubgo.edu, faculty@clubgo.edu, coordinator1 [20231CSE0001])');
 
   // 3. Seed Active Event
   const socseSchool = await prisma.school.findUnique({ where: { code: 'SOCSE' } });

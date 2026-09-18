@@ -3,13 +3,14 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { Navbar } from './components/Navbar';
 import { RegisterPage } from './pages/public/RegisterPage';
-import { VolunteerLoginPage } from './pages/volunteer/VolunteerLoginPage';
-import { VolunteerScannerPage } from './pages/volunteer/VolunteerScannerPage';
+import { ResultsPublicPage } from './pages/public/ResultsPublicPage';
+import { CoordinatorLoginPage } from './pages/volunteer/CoordinatorLoginPage';
+import { VolunteerScannerPage as CoordinatorScannerPage } from './pages/volunteer/VolunteerScannerPage';
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 
 const MainContent: React.FC = () => {
-  const [currentPortal, setCurrentPortal] = useState<'register' | 'volunteer' | 'admin'>('register');
+  const [currentPortal, setCurrentPortal] = useState<'register' | 'results' | 'coordinator' | 'admin'>('register');
   const { isAuthenticated, isFaculty, isVolunteer } = useAuth();
 
   return (
@@ -19,8 +20,10 @@ const MainContent: React.FC = () => {
       <main className="flex-1 pb-16">
         {currentPortal === 'register' && <RegisterPage />}
 
-        {currentPortal === 'volunteer' && (
-          isAuthenticated && isVolunteer ? <VolunteerScannerPage /> : <VolunteerLoginPage />
+        {currentPortal === 'results' && <ResultsPublicPage />}
+
+        {currentPortal === 'coordinator' && (
+          isAuthenticated && isVolunteer ? <CoordinatorScannerPage /> : <CoordinatorLoginPage />
         )}
 
         {currentPortal === 'admin' && (

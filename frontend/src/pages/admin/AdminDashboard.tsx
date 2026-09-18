@@ -5,6 +5,8 @@ import { api } from '../../api/client';
 import { LiveDashboardData, Team, SchoolStat } from '../../types';
 import { EventConfigTab } from './EventConfigTab';
 import { SchoolConfigTab } from './SchoolConfigTab';
+import { CoordinatorConfigTab } from './CoordinatorConfigTab';
+import { ResultsConfigTab } from './ResultsConfigTab';
 import {
   Users,
   UserCheck,
@@ -22,13 +24,15 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  Award,
+  Trophy,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { user, isSuperAdmin } = useAuth();
   const { socket, isConnected } = useSocket();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'event-config' | 'school-config'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'coordinators' | 'results' | 'school-config' | 'event-config'>('dashboard');
   const [data, setData] = useState<LiveDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -168,10 +172,10 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Tab Controls */}
-        <div className="flex items-center space-x-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+        <div className="flex items-center space-x-1 sm:space-x-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
               activeTab === 'dashboard'
                 ? 'bg-white text-indigo-600 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -181,25 +185,49 @@ export const AdminDashboard: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setActiveTab('event-config')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              activeTab === 'event-config'
+            onClick={() => setActiveTab('coordinators')}
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
+              activeTab === 'coordinators'
                 ? 'bg-white text-indigo-600 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Event Config
+            <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+            <span>Co-ordinators</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('results')}
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
+              activeTab === 'results'
+                ? 'bg-white text-indigo-600 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-500" />
+            <span>Results & Certs</span>
           </button>
 
           <button
             onClick={() => setActiveTab('school-config')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
               activeTab === 'school-config'
                 ? 'bg-white text-indigo-600 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             School Colors
+          </button>
+
+          <button
+            onClick={() => setActiveTab('event-config')}
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+              activeTab === 'event-config'
+                ? 'bg-white text-indigo-600 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Event Config
           </button>
         </div>
       </div>
@@ -213,8 +241,10 @@ export const AdminDashboard: React.FC = () => {
       )}
 
       {/* RENDER ACTIVE TAB */}
-      {activeTab === 'event-config' && <EventConfigTab />}
+      {activeTab === 'coordinators' && <CoordinatorConfigTab />}
+      {activeTab === 'results' && <ResultsConfigTab />}
       {activeTab === 'school-config' && <SchoolConfigTab />}
+      {activeTab === 'event-config' && <EventConfigTab />}
 
       {activeTab === 'dashboard' && data && (
         <div className="space-y-6">

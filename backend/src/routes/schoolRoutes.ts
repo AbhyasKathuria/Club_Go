@@ -63,4 +63,40 @@ router.post('/', authenticateToken, requireFacultyOrAdmin, async (req, res, next
   }
 });
 
+// DELETE /api/schools/:id - Remove school (SuperAdmin/Faculty with safety check)
+router.delete('/:id', authenticateToken, requireFacultyOrAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const school = await prisma.school.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { teams: true },
+        },
+      },
+    });
+
+    if (!school) {
+      res.status(404).json({ error: 'School not found.' });
+      return;
+    }
+
+    if (school._count.teams > 0) {
+      res.status(400).json({
+        error: `Cannot delete "${school.name}" (${school.code}) because ${school._count.teams} team(s) are currently registered under it. Delete or reassign teams before deleting this school.`,
+      });
+      return;
+    }
+
+    await prisma.school.delete({
+      where: { id },
+    });
+
+    res.json({ message: `School "${school.name}" removed successfully.` });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

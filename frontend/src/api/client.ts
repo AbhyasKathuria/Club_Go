@@ -84,10 +84,87 @@ export const api = {
 
   // Schools
   getSchools: () => request<any[]>('/schools'),
+  createSchool: (data: { name: string; code: string; color_code: string }) =>
+    request<any>('/schools', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   updateSchool: (id: string, data: { name?: string; color_code: string }) =>
     request<any>(`/schools/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    }),
+  deleteSchool: (id: string) =>
+    request<any>(`/schools/${id}`, {
+      method: 'DELETE',
+    }),
+
+  // Student Co-ordinators
+  registerCoordinator: (data: {
+    name: string;
+    username: string;
+    roll_number: string;
+    email: string;
+    phone?: string;
+    school_name?: string;
+  }) =>
+    request<any>('/auth/coordinator/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  loginCoordinator: (credentials: { username: string; roll_number: string }) =>
+    request<{ token: string; user: any }>('/auth/coordinator/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    }),
+  getCoordinators: () => request<any[]>('/coordinators'),
+  approveCoordinator: (id: string) =>
+    request<any>(`/coordinators/${id}/approve`, {
+      method: 'PATCH',
+    }),
+  revokeCoordinator: (id: string) =>
+    request<any>(`/coordinators/${id}/revoke`, {
+      method: 'PATCH',
+    }),
+  deleteCoordinator: (id: string) =>
+    request<any>(`/coordinators/${id}`, {
+      method: 'DELETE',
+    }),
+  createCoordinator: (data: any) =>
+    request<any>('/coordinators', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Results & Certificates
+  getPublicResults: () => request<{ event: any; results: any[] }>('/results/public'),
+  unlockTeamResults: (teamName: string) =>
+    request<any>('/results/unlock', {
+      method: 'POST',
+      body: JSON.stringify({ teamName }),
+    }),
+  getAdminResults: () => request<{ event: any; teams: any[] }>('/results/admin'),
+  saveTeamResult: (data: {
+    eventId: string;
+    teamId: string;
+    rank?: number | null;
+    awardTitle: string;
+    remarks?: string;
+    isPublished: boolean;
+    customCertificateUrl?: string;
+  }) =>
+    request<any>('/results', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  togglePublishResult: (id: string, isPublished: boolean) =>
+    request<any>(`/results/${id}/publish`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isPublished }),
+    }),
+  deleteResult: (id: string) =>
+    request<any>(`/results/${id}`, {
+      method: 'DELETE',
     }),
 
   // Registrations

@@ -1,11 +1,11 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { QrCode, Shield, Users, LogOut, Radio } from 'lucide-react';
+import { QrCode, Shield, Users, LogOut, Radio, Award } from 'lucide-react';
 
 interface NavbarProps {
-  currentPortal: 'register' | 'volunteer' | 'admin';
-  onSelectPortal: (portal: 'register' | 'volunteer' | 'admin') => void;
+  currentPortal: 'register' | 'results' | 'coordinator' | 'admin';
+  onSelectPortal: (portal: 'register' | 'results' | 'coordinator' | 'admin') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentPortal, onSelectPortal }) => {
@@ -47,41 +47,53 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPortal, onSelectPortal })
         </div>
 
         {/* Portal Switcher Nav */}
-        <nav className="flex items-center space-x-1 sm:space-x-2 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60">
+        <nav className="flex items-center space-x-1 sm:space-x-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 overflow-x-auto">
           <button
             onClick={() => onSelectPortal('register')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+            className={`flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
               currentPortal === 'register'
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Register</span>
           </button>
 
           <button
-            onClick={() => onSelectPortal('volunteer')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-              currentPortal === 'volunteer'
+            onClick={() => onSelectPortal('results')}
+            className={`flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+              currentPortal === 'results'
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <QrCode className="w-4 h-4" />
-            <span>Volunteer Scanner</span>
+            <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
+            <span>Results & Certs</span>
+          </button>
+
+          <button
+            onClick={() => onSelectPortal('coordinator')}
+            className={`flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+              currentPortal === 'coordinator'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Student Co-ordinators</span>
           </button>
 
           <button
             onClick={() => onSelectPortal('admin')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+            className={`flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
               currentPortal === 'admin'
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Shield className="w-4 h-4" />
-            <span>Admin Panel</span>
+            <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Admin</span>
           </button>
         </nav>
 

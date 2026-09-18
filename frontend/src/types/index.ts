@@ -89,3 +89,72 @@ export interface OfflineScanItem {
   status: 'PENDING' | 'SYNCED' | 'FAILED';
   errorMessage?: string;
 }
+
+export interface CoordinatorUser {
+  id: string;
+  name: string;
+  username: string;
+  roll_number: string;
+  email: string;
+  phone?: string | null;
+  school_name?: string | null;
+  is_approved: boolean;
+  created_at?: string;
+  _count?: {
+    attendance_logs: number;
+  };
+}
+
+export interface Certificate {
+  id: string;
+  certificateNo: string;
+  recipientName: string;
+  awardTitle: string;
+  issueDate: string;
+  certificateUrl?: string | null;
+  participant?: {
+    id: string;
+    email: string;
+    phone: string;
+  };
+}
+
+export interface EventResult {
+  id: string;
+  rank?: number | null;
+  awardTitle: string;
+  remarks?: string | null;
+  isPublished?: boolean;
+}
+
+export interface PublicResultEntry {
+  id: string;
+  rank?: number | null;
+  awardTitle: string;
+  teamName: string;
+  teamSize: number;
+  school: {
+    name: string;
+    code: string;
+    color_code: string;
+  };
+  hasCertificates: boolean;
+}
+
+export interface UnlockedResult {
+  unlocked: boolean;
+  event: {
+    id: string;
+    name: string;
+    eventDate?: string | null;
+    sponsorName?: string | null;
+  };
+  team: {
+    id: string;
+    teamName: string;
+    teamSize: number;
+    school: School;
+  };
+  result: EventResult;
+  certificates: Certificate[];
+}

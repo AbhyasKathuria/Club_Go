@@ -19,6 +19,8 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 
+import { useAuth } from '../../context/AuthContext';
+
 interface ScanResultCard {
   status: 'SUCCESS' | 'DUPLICATE' | 'INVALID';
   message: string;
@@ -28,6 +30,7 @@ interface ScanResultCard {
 }
 
 export const VolunteerScannerPage: React.FC = () => {
+  const { user } = useAuth();
   const [scanMode, setScanMode] = useState<'team' | 'individual'>('individual');
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -201,6 +204,23 @@ export const VolunteerScannerPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto px-4 py-6">
       
+      {/* Student Co-ordinator Banner */}
+      <div className="mb-4 flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+            Student Co-ordinator
+          </div>
+          <div className="text-xs font-black text-slate-900">
+            {user?.name || 'Authorized Staff'}
+          </div>
+        </div>
+        <div className="text-right">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
+            Gate Scanner
+          </span>
+        </div>
+      </div>
+
       {/* Offline Alert Queue Badge */}
       <OfflineQueueBadge queue={offlineQueue} onSyncComplete={refreshQueue} />
 

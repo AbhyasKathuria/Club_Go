@@ -31,7 +31,7 @@ const MainContent: React.FC = () => {
         )}
       </main>
 
-      <footer className="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500 no-print">
         <div className="max-w-7xl mx-auto px-4 space-y-6">
           
           {/* Institutional Branding Strip */}

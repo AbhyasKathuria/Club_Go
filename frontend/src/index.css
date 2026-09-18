@@ -19,3 +19,38 @@ body {
 .animate-pulse-glow {
   animation: pulse-glow 2s infinite ease-in-out;
 }
+
+@media print {
+  header,
+  nav,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .printable-pass-card {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    max-width: 480px !important;
+    margin: 10px auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+}
+

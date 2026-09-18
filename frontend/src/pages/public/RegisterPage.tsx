@@ -388,7 +388,7 @@ export const RegisterPage: React.FC = () => {
   // If registration was successful, show Confirmation / Pass view
   if (registeredData) {
     return (
-      <div className="max-w-4xl mx-auto px-4 pt-6 pb-14">
+      <div className="max-w-4xl mx-auto px-4 pt-10 sm:pt-14 pb-16">
         <div className="text-center mb-8">
           <div className="inline-flex items-center space-x-2 px-3.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wider mb-2 shadow-sm">
             <Sparkles className="w-4 h-4 text-emerald-600" />

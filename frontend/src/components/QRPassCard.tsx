@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Download, Printer, Users, UserCheck, ShieldCheck, IdCard, Mail, Phone, ChevronRight } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { toPng } from 'html-to-image';
+import { Download, Printer, Users, UserCheck, ShieldCheck, IdCard, Mail, Phone, Loader2 } from 'lucide-react';
 import { getSchoolTheme } from '../utils/themeHelper';
 
 interface QRPassCardProps {
@@ -40,56 +41,58 @@ interface QRPassCardProps {
 export const QRPassCard: React.FC<QRPassCardProps> = ({ team, teamQrDataUrl, participants }) => {
   const [activeTab, setActiveTab] = useState<'team' | 'individual'>('team');
   const [selectedMemberIdx, setSelectedMemberIdx] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const schoolColor = team.school.color_code || team.school.colorCode || '#2563EB';
   const theme = getSchoolTheme(team.school.code, schoolColor);
 
-  const downloadImage = (dataUrl: string, filename: string) => {
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const selectedParticipant = participants[selectedMemberIdx] || participants[0];
 
+  const handleDownloadStructuredPass = async () => {
+    if (!cardRef.current) return;
+    setIsDownloading(true);
+    try {
+      const dataUrl = await toPng(cardRef.current, {
+        quality: 1,
+        pixelRatio: 2.5,
+        backgroundColor: '#ffffff',
+        cacheBust: true,
+      });
+
+      const member = selectedParticipant;
+      const filename =
+        activeTab === 'team'
+          ? `Pass_Team_${team.teamName.replace(/\s+/g, '_')}.png`
+          : `Pass_${member.name.replace(/\s+/g, '_')}_${(member.rollNumber || member.roll_number || 'id').replace(/\s+/g, '_')}.png`;
+
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Failed to export structured pass card:', err);
+      // Fallback: download QR directly
+      const fallbackUrl =
+        activeTab === 'team' ? teamQrDataUrl : (selectedParticipant.qrDataUrl || teamQrDataUrl);
+      const link = document.createElement('a');
+      link.href = fallbackUrl;
+      link.download = `QR_${activeTab}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden max-w-xl mx-auto my-4 transition-all">
+    <div className="max-w-xl mx-auto my-4 transition-all">
       
-      {/* Official University & Club Header Strip */}
-      <div className="bg-white px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <img
-            src="/images/Presidency.png"
-            alt="Presidency University"
-            className="h-7 w-auto object-contain"
-          />
-        </div>
-
-        <div className="flex items-center space-x-3">
-          <img
-            src="/images/DSA NAAC.png"
-            alt="NAAC A"
-            className="h-6 w-auto object-contain hidden sm:block"
-          />
-          <img
-            src="/images/iiclogo.png"
-            alt="IIC"
-            className="h-6 w-auto object-contain hidden sm:block"
-          />
-          <div className="h-5 w-px bg-slate-200 hidden sm:block" />
-          <img
-            src="/images/CogniCore Logo.png"
-            alt="CogniCore Club"
-            className="h-8 w-auto object-contain"
-          />
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 bg-slate-50/90 p-1.5 gap-1.5">
+      {/* Tab Switcher - Strictly marked no-print */}
+      <div className="flex border border-slate-200 bg-slate-100/90 p-1.5 rounded-2xl gap-1.5 mb-4 no-print shadow-sm">
         <button
           onClick={() => setActiveTab('team')}
           className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
@@ -115,24 +118,92 @@ export const QRPassCard: React.FC<QRPassCardProps> = ({ team, teamQrDataUrl, par
         </button>
       </div>
 
-      {/* Team Pass View */}
-      {activeTab === 'team' && (
-        <div>
-          {/* School Color Header Banner */}
-          <div
-            className="p-6 text-white relative overflow-hidden transition-colors"
-            style={{ backgroundColor: schoolColor }}
-          >
+      {/* Member Selector Pills if multiple members - Strictly marked no-print */}
+      {activeTab === 'individual' && participants.length > 1 && (
+        <div className="mb-4 px-4 py-2.5 bg-white border border-slate-200 rounded-xl flex items-center space-x-2 overflow-x-auto no-print shadow-sm">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+            Select Member:
+          </span>
+          {participants.map((p, idx) => (
+            <button
+              key={p.id || idx}
+              onClick={() => setSelectedMemberIdx(idx)}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                selectedMemberIdx === idx
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200'
+              }`}
+            >
+              Member {idx + 1}: {p.name.split(' ')[0]}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* THE ACTUAL STRUCTURED PASS CARD - DOWNLOADED AS PNG & PRINTED */}
+      <div
+        ref={cardRef}
+        className="printable-pass-card bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden transition-all text-slate-900"
+      >
+        {/* Official University & Club Header Strip */}
+        <div className="bg-white px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <img
+              src="/images/Presidency.png"
+              alt="Presidency University"
+              className="h-7 w-auto object-contain"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2.5">
+            <img
+              src="/images/DSA NAAC.png"
+              alt="NAAC A"
+              className="h-6 w-auto object-contain"
+            />
+            <img
+              src="/images/iiclogo.png"
+              alt="IIC"
+              className="h-6 w-auto object-contain"
+            />
+            <div className="h-5 w-px bg-slate-200" />
+            <img
+              src="/images/CogniCore Logo.png"
+              alt="CogniCore Club"
+              className="h-8 w-auto object-contain"
+            />
+          </div>
+        </div>
+
+        {/* School Color Header Banner (Explicit Inline Styles for Print & PNG Capture) */}
+        <div
+          className="p-6 text-white relative overflow-hidden transition-colors"
+          style={{
+            backgroundColor: schoolColor,
+            color: '#ffffff',
+            WebkitPrintColorAdjust: 'exact',
+            printColorAdjust: 'exact',
+          }}
+        >
+          {activeTab === 'team' ? (
             <div className="relative z-10 flex items-start justify-between">
               <div>
-                <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-wider mb-2">
-                  <ShieldCheck className="w-3.5 h-3.5" />
+                <div
+                  className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider mb-2 text-white"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-white" />
                   <span>{team.school.code} • {team.school.name}</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black tracking-tight">{team.teamName}</h2>
-                <p className="text-xs sm:text-sm text-white/90 font-medium mt-0.5">
-                  {team.event?.name || 'CogniCore University Event'}
+                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
+                  {team.teamName}
+                </h2>
+                <p className="text-xs sm:text-sm text-white font-medium mt-0.5">
+                  Express Team Pass • {team.teamSize} Member{team.teamSize > 1 ? 's' : ''}
                 </p>
+                <div className="text-[11px] text-white/90 mt-1 font-medium">
+                  {team.event?.name || 'CogniCore University Summit'}
+                </div>
               </div>
 
               {team.event?.sponsor_logo_url && (
@@ -145,89 +216,15 @@ export const QRPassCard: React.FC<QRPassCardProps> = ({ team, teamQrDataUrl, par
                 </div>
               )}
             </div>
-
-            {/* Subtle watermark */}
-            <div className="absolute -right-6 -bottom-8 opacity-10 text-8xl font-black select-none pointer-events-none">
-              {team.school.code}
-            </div>
-          </div>
-
-          {/* Team Body */}
-          <div className="p-6 text-center">
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 inline-block mb-4 shadow-inner">
-              <img
-                src={teamQrDataUrl}
-                alt="Team QR Code"
-                className="w-56 h-56 mx-auto rounded-xl shadow-sm border border-slate-200"
-              />
-            </div>
-
-            <div className="font-mono text-sm font-bold text-slate-800 tracking-wider">
-              {team.qrToken}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              One-scan check-in for all {team.teamSize} team members at the registration entrance
-            </p>
-
-            {/* Quick Actions */}
-            <div className="flex items-center justify-center space-x-3 mt-6 pt-6 border-t border-slate-100">
-              <button
-                onClick={() =>
-                  downloadImage(teamQrDataUrl, `team-pass-${team.teamName.replace(/\s+/g, '_')}.png`)
-                }
-                className="flex items-center space-x-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download Pass</span>
-              </button>
-
-              <button
-                onClick={() => window.print()}
-                className="flex items-center space-x-1.5 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-xl transition-colors"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Print Card</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Individual Pass View (Exact Same Rich Card Layout as Team Pass) */}
-      {activeTab === 'individual' && selectedParticipant && (
-        <div>
-          {/* Member Selector Pills if multiple members */}
-          {participants.length > 1 && (
-            <div className="px-5 py-2.5 bg-slate-100/70 border-b border-slate-200 flex items-center space-x-2 overflow-x-auto">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                Select Member:
-              </span>
-              {participants.map((p, idx) => (
-                <button
-                  key={p.id || idx}
-                  onClick={() => setSelectedMemberIdx(idx)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                    selectedMemberIdx === idx
-                      ? 'bg-slate-900 text-white shadow-sm'
-                      : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
-                  }`}
-                >
-                  Member {idx + 1}: {p.name.split(' ')[0]}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* School Color Header Banner for Individual Student */}
-          <div
-            className="p-6 text-white relative overflow-hidden transition-colors"
-            style={{ backgroundColor: schoolColor }}
-          >
+          ) : (
             <div className="relative z-10 flex items-start justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                  <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-wider">
-                    <ShieldCheck className="w-3.5 h-3.5" />
+                  <span
+                    className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider text-white"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-white" />
                     <span>{team.school.code} • {team.school.name}</span>
                   </span>
 
@@ -239,12 +236,15 @@ export const QRPassCard: React.FC<QRPassCardProps> = ({ team, teamQrDataUrl, par
                   )}
                 </div>
 
-                <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
                   {selectedParticipant.name}
                 </h2>
-                <p className="text-xs sm:text-sm text-white/90 font-medium mt-0.5">
-                  Team: <strong className="text-white">{team.teamName}</strong> • {team.event?.name || 'CogniCore Club'}
+                <p className="text-xs sm:text-sm text-white font-medium mt-0.5">
+                  Team: <strong className="text-white font-bold">{team.teamName}</strong>
                 </p>
+                <div className="text-[11px] text-white/90 mt-1 font-medium">
+                  {team.event?.name || 'CogniCore Club'}
+                </div>
               </div>
 
               {team.event?.sponsor_logo_url && (
@@ -257,34 +257,39 @@ export const QRPassCard: React.FC<QRPassCardProps> = ({ team, teamQrDataUrl, par
                 </div>
               )}
             </div>
+          )}
 
-            {/* Subtle watermark */}
-            <div className="absolute -right-6 -bottom-8 opacity-10 text-8xl font-black select-none pointer-events-none">
-              PU
-            </div>
+          {/* Watermark */}
+          <div
+            className="absolute -right-6 -bottom-8 opacity-15 text-8xl font-black select-none pointer-events-none text-white"
+            style={{ color: '#ffffff' }}
+          >
+            {team.school.code}
+          </div>
+        </div>
+
+        {/* Card Body with Centered QR Code */}
+        <div className="p-6 text-center bg-white">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block mb-3 shadow-inner">
+            <img
+              src={activeTab === 'team' ? teamQrDataUrl : (selectedParticipant.qrDataUrl || teamQrDataUrl)}
+              alt="Pass QR Code"
+              className="w-56 h-56 mx-auto rounded-xl shadow-sm border border-slate-200 bg-white"
+            />
           </div>
 
-          {/* Individual Body */}
-          <div className="p-6 text-center">
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 inline-block mb-4 shadow-inner">
-              {selectedParticipant.qrDataUrl ? (
-                <img
-                  src={selectedParticipant.qrDataUrl}
-                  alt={`${selectedParticipant.name} QR Pass`}
-                  className="w-56 h-56 mx-auto rounded-xl shadow-sm border border-slate-200"
-                />
-              ) : (
-                <div className="w-56 h-56 flex items-center justify-center text-xs text-slate-400">
-                  Individual QR Available
-                </div>
-              )}
-            </div>
+          <div className="font-mono text-sm font-extrabold text-slate-900 tracking-wider">
+            {activeTab === 'team' ? team.qrToken : selectedParticipant.qrToken}
+          </div>
 
-            <div className="font-mono text-sm font-bold text-slate-800 tracking-wider">
-              {selectedParticipant.qrToken}
-            </div>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            {activeTab === 'team'
+              ? `One-scan express check-in for all ${team.teamSize} team members at the registration entrance`
+              : 'Authorized individual pass for campus entry & attendance scanner check-in'}
+          </p>
 
-            {/* Student metadata badges */}
+          {/* Participant details pills (for Individual pass) */}
+          {activeTab === 'individual' && (
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-600">
               {selectedParticipant.email && (
                 <span className="inline-flex items-center space-x-1 px-2.5 py-1 bg-slate-100 rounded-lg">
@@ -304,35 +309,45 @@ export const QRPassCard: React.FC<QRPassCardProps> = ({ team, teamQrDataUrl, par
                 </span>
               )}
             </div>
+          )}
 
-            {/* Actions for this individual pass */}
-            <div className="flex items-center justify-center space-x-3 mt-6 pt-6 border-t border-slate-100">
-              {selectedParticipant.qrDataUrl && (
-                <button
-                  onClick={() =>
-                    downloadImage(
-                      selectedParticipant.qrDataUrl!,
-                      `pass-${selectedParticipant.name.replace(/\s+/g, '_')}.png`
-                    )
-                  }
-                  className="flex items-center space-x-1.5 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Pass</span>
-                </button>
-              )}
-
-              <button
-                onClick={() => window.print()}
-                className="flex items-center space-x-1.5 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-xl transition-colors"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Print Card</span>
-              </button>
-            </div>
+          {/* Card footer strip */}
+          <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            <span>Presidency University</span>
+            <span>Official Digital Access Pass</span>
+            <span>CogniCore Club</span>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Action Buttons - Strictly marked no-print */}
+      <div className="flex items-center justify-center space-x-3 mt-5 no-print">
+        <button
+          onClick={handleDownloadStructuredPass}
+          disabled={isDownloading}
+          className="flex items-center space-x-2 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all disabled:opacity-50"
+        >
+          {isDownloading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Generating Pass Card...</span>
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              <span>Download Pass</span>
+            </>
+          )}
+        </button>
+
+        <button
+          onClick={() => window.print()}
+          className="flex items-center space-x-2 px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-xl border border-slate-200 shadow-sm transition-all"
+        >
+          <Printer className="w-4 h-4" />
+          <span>Print Card</span>
+        </button>
+      </div>
 
     </div>
   );

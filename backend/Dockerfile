@@ -1,40 +1,25 @@
-# Multi-stage Dockerfile for ClubGo Backend
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package manifests and prisma schema
 COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Copy source code and config
+COPY . .
 
-# Copy source code and compile TypeScript
-COPY tsconfig.json ./
-COPY src ./src
+# Build TypeScript and generate Prisma Client
 RUN npm run build
 
-# Production Runner Stage
-FROM node:20-alpine AS runner
-
-WORKDIR /app
-
+ENV PORT=10000
 ENV NODE_ENV=production
-ENV PORT=5000
+ENV DATABASE_URL=file:./prisma/dev.db
+ENV CLIENT_URL=*
 
-# Copy runtime files
-COPY package*.json ./
-RUN npm ci --only=production
+EXPOSE 10000
 
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
-
-EXPOSE 5000
-
-CMD ["node", "dist/index.js"]
+CMD ["npm", "start"]

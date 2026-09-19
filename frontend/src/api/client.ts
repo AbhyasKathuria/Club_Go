@@ -67,6 +67,11 @@ export const api = {
   // Events
   getActiveEvent: () => request<{ event: any; schools: any[] }>('/events/active'),
   getAllEvents: () => request<any[]>('/events/all'),
+  createEvent: (data: any) =>
+    request<any>('/events', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   updateEvent: (id: string, data: any) =>
     request<any>(`/events/${id}`, {
       method: 'PUT',

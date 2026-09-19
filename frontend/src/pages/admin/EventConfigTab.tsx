@@ -49,51 +49,110 @@ export const EventConfigTab: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!event) return;
+    if (!name.trim()) {
+      setMessage({ type: 'error', text: 'Please enter an event title.' });
+      return;
+    }
+
     setIsSaving(true);
     setMessage(null);
 
     try {
-      let finalLogoUrl = sponsorLogoUrl;
+      let savedEvent: Event;
 
-      // Handle logo upload if a file was selected
-      if (logoFile) {
-        const formData = new FormData();
-        formData.append('logo', logoFile);
-        const uploadRes = await api.uploadSponsorLogo(event.id, formData);
-        finalLogoUrl = uploadRes.sponsor_logo_url;
+      if (!event) {
+        // Create new event
+        savedEvent = await api.createEvent({
+          name: name.trim(),
+          description,
+          sponsor_name: sponsorName,
+          sponsor_logo_url: sponsorLogoUrl,
+          event_date: eventDate ? new Date(eventDate).toISOString() : undefined,
+          status: 'DRAFT',
+          min_team_size: minTeamSize,
+          max_team_size: maxTeamSize,
+          allowed_email_domain: allowedDomain.trim() ? allowedDomain.trim() : null,
+        });
+      } else {
+        // Update existing event
+        savedEvent = await api.updateEvent(event.id, {
+          name: name.trim(),
+          description,
+          sponsor_name: sponsorName,
+          sponsor_logo_url: sponsorLogoUrl,
+          event_date: eventDate ? new Date(eventDate).toISOString() : undefined,
+          min_team_size: minTeamSize,
+          max_team_size: maxTeamSize,
+          allowed_email_domain: allowedDomain.trim() ? allowedDomain.trim() : null,
+        });
       }
 
-      const updated = await api.updateEvent(event.id, {
-        name,
-        description,
-        sponsor_name: sponsorName,
-        sponsor_logo_url: finalLogoUrl,
-        event_date: eventDate ? new Date(eventDate).toISOString() : undefined,
-        min_team_size: minTeamSize,
-        max_team_size: maxTeamSize,
-        allowed_email_domain: allowedDomain.trim() ? allowedDomain.trim() : null,
-      });
+      // Handle logo upload if a file was selected
+      if (logoFile && savedEvent) {
+        try {
+          const formData = new FormData();
+          formData.append('logo', logoFile);
+          const uploadRes = await api.uploadSponsorLogo(savedEvent.id, formData);
+          savedEvent.sponsor_logo_url = uploadRes.sponsor_logo_url;
+          setSponsorLogoUrl(uploadRes.sponsor_logo_url);
+          setLogoFile(null);
+        } catch (uploadErr) {
+          console.error('Logo upload error:', uploadErr);
+        }
+      }
 
-      setEvent(updated);
-      setSponsorLogoUrl(finalLogoUrl);
-      setLogoFile(null);
-      setMessage({ type: 'success', text: 'Event settings updated successfully.' });
+      setEvent(savedEvent);
+      setMessage({ type: 'success', text: 'Event settings saved successfully.' });
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Failed to update event' });
+      setMessage({ type: 'error', text: err.message || 'Failed to save event' });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleToggleStatus = async (newStatus: 'LAUNCHED' | 'CLOSED' | 'DRAFT') => {
-    if (!event) return;
     setIsSaving(true);
     setMessage(null);
 
     try {
-      const updated = await api.toggleEventStatus(event.id, newStatus);
-      setEvent(updated);
+      let currentEvent = event;
+
+      if (!currentEvent) {
+        if (!name.trim()) {
+          setMessage({ type: 'error', text: 'Please enter an event title before launching.' });
+          setIsSaving(false);
+          return;
+        }
+
+        currentEvent = await api.createEvent({
+          name: name.trim(),
+          description,
+          sponsor_name: sponsorName,
+          sponsor_logo_url: sponsorLogoUrl,
+          event_date: eventDate ? new Date(eventDate).toISOString() : undefined,
+          status: newStatus,
+          min_team_size: minTeamSize,
+          max_team_size: maxTeamSize,
+          allowed_email_domain: allowedDomain.trim() ? allowedDomain.trim() : null,
+        });
+
+        if (logoFile && currentEvent) {
+          try {
+            const formData = new FormData();
+            formData.append('logo', logoFile);
+            const uploadRes = await api.uploadSponsorLogo(currentEvent.id, formData);
+            currentEvent.sponsor_logo_url = uploadRes.sponsor_logo_url;
+            setSponsorLogoUrl(uploadRes.sponsor_logo_url);
+            setLogoFile(null);
+          } catch (uploadErr) {
+            console.error('Logo upload error:', uploadErr);
+          }
+        }
+      } else {
+        currentEvent = await api.toggleEventStatus(currentEvent.id, newStatus);
+      }
+
+      setEvent(currentEvent);
       setMessage({
         type: 'success',
         text: `Event status updated to ${newStatus}. Public registration is now ${
@@ -127,11 +186,11 @@ export const EventConfigTab: React.FC = () => {
                   : 'bg-amber-100 text-amber-800'
               }`}
             >
-              ● {event?.status}
+              ● {event?.status || 'DRAFT'}
             </span>
             <span className="text-xs text-slate-500">Public Portal Status</span>
           </div>
-          <h2 className="text-xl font-black text-slate-900 mt-1">{event?.name}</h2>
+          <h2 className="text-xl font-black text-slate-900 mt-1">{event?.name || name || 'Configure Event'}</h2>
           <p className="text-xs text-slate-500">
             {event?.status === 'LAUNCHED'
               ? 'Event is published. Students can currently submit registrations.'
@@ -144,7 +203,7 @@ export const EventConfigTab: React.FC = () => {
             <button
               onClick={() => handleToggleStatus('LAUNCHED')}
               disabled={isSaving}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-colors"
+              className="flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-colors disabled:opacity-50"
             >
               <Rocket className="w-4 h-4" />
               <span>Launch Event (Publish)</span>
@@ -153,7 +212,7 @@ export const EventConfigTab: React.FC = () => {
             <button
               onClick={() => handleToggleStatus('CLOSED')}
               disabled={isSaving}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-colors"
+              className="flex items-center space-x-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-colors disabled:opacity-50"
             >
               <span>Close Registration</span>
             </button>

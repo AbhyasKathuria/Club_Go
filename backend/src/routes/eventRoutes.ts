@@ -7,15 +7,24 @@ import { EventStatus } from '../types/enums';
 
 const router = Router();
 
-// GET /api/events/active - Public endpoint to retrieve the launched event for registration
+// GET /api/events/active - Public endpoint to retrieve the active event for registration or admin config
 router.get('/active', async (req, res, next) => {
   try {
-    const event = await prisma.event.findFirst({
+    // 1. First look for an active LAUNCHED event
+    let event = await prisma.event.findFirst({
       where: {
         status: EventStatus.LAUNCHED,
       },
       orderBy: { created_at: 'desc' },
     });
+
+    // 2. If no event is currently LAUNCHED, fallback to the latest event (DRAFT or CLOSED)
+    // so the admin portal can see and edit the event currently being configured.
+    if (!event) {
+      event = await prisma.event.findFirst({
+        orderBy: { created_at: 'desc' },
+      });
+    }
 
     const schools = await prisma.school.findMany({
       orderBy: { code: 'asc' },
@@ -60,10 +69,28 @@ const eventSchema = z.object({
   form_config: z.string().nullable().optional(),
 });
 
-// POST /api/events - Create new event (Superadmin)
-router.post('/', authenticateToken, requireSuperAdmin, async (req, res, next) => {
+// POST /api/events - Create or update event (Superadmin & Faculty)
+router.post('/', authenticateToken, requireFacultyOrAdmin, async (req, res, next) => {
   try {
     const data = eventSchema.parse(req.body);
+
+    const existingEvent = await prisma.event.findFirst({
+      orderBy: { created_at: 'desc' },
+    });
+
+    if (existingEvent) {
+      const updateData: any = { ...data };
+      if (data.event_date) {
+        updateData.event_date = new Date(data.event_date);
+      }
+      const updated = await prisma.event.update({
+        where: { id: existingEvent.id },
+        data: updateData,
+      });
+      res.status(200).json(updated);
+      return;
+    }
+
     const event = await prisma.event.create({
       data: {
         name: data.name,
@@ -87,7 +114,16 @@ router.post('/', authenticateToken, requireSuperAdmin, async (req, res, next) =>
 // PUT /api/events/:id - Update event details (Superadmin & Faculty)
 router.put('/:id', authenticateToken, requireFacultyOrAdmin, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    let { id } = req.params;
+    if (id === 'active' || id === 'latest') {
+      const existing = await prisma.event.findFirst({
+        orderBy: { created_at: 'desc' },
+      });
+      if (existing) {
+        id = existing.id;
+      }
+    }
+
     const data = eventSchema.partial().parse(req.body);
 
     const updateData: any = { ...data };
@@ -109,7 +145,16 @@ router.put('/:id', authenticateToken, requireFacultyOrAdmin, async (req, res, ne
 // PATCH /api/events/:id/status - Quick toggle status (e.g. Launch or Close)
 router.patch('/:id/status', authenticateToken, requireFacultyOrAdmin, async (req, res, next) => {
   try {
-    const { id } = req.params;
+    let { id } = req.params;
+    if (id === 'active' || id === 'latest') {
+      const existing = await prisma.event.findFirst({
+        orderBy: { created_at: 'desc' },
+      });
+      if (existing) {
+        id = existing.id;
+      }
+    }
+
     const { status } = req.body;
 
     if (!['DRAFT', 'LAUNCHED', 'CLOSED'].includes(status)) {
@@ -136,7 +181,16 @@ router.post(
   uploadLogo.single('logo'),
   async (req, res, next) => {
     try {
-      const { id } = req.params;
+      let { id } = req.params;
+      if (id === 'active' || id === 'latest') {
+        const existing = await prisma.event.findFirst({
+          orderBy: { created_at: 'desc' },
+        });
+        if (existing) {
+          id = existing.id;
+        }
+      }
+
       const { directUrl } = req.body;
 
       const logoUrl = await processSponsorLogo(req.file, directUrl);

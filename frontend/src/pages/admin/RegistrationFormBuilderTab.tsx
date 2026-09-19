@@ -178,7 +178,13 @@ export const RegistrationFormBuilderTab: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!event) return;
+    if (!event) {
+      setMessage({
+        type: 'error',
+        text: 'Please configure and save your event title under the "Event Config" tab first.',
+      });
+      return;
+    }
     setIsSaving(true);
     setMessage(null);
 

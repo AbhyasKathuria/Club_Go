@@ -108,7 +108,7 @@ router.post('/coordinator/login', async (req, res, next) => {
     // Check approval status
     if (!user.is_approved) {
       res.status(403).json({
-        error: 'Your Student Co-ordinator account is currently pending approval by the Super Admin. Please contact the faculty coordinator to grant access.',
+        error: 'Your Student Co-ordinator account is currently pending approval by the Super Admin. Please contact the Super Admin to grant access.',
         is_approved: false,
       });
       return;

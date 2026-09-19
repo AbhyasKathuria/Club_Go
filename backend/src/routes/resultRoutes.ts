@@ -10,12 +10,18 @@ const router = Router();
 // GET /api/results/public - Anonymous public results / leaderboard (masked individual identities)
 router.get('/public', async (req, res, next) => {
   try {
-    const activeEvent = await prisma.event.findFirst({
+    let activeEvent = await prisma.event.findFirst({
       where: {
         status: { in: [EventStatus.LAUNCHED, EventStatus.CLOSED] },
       },
       orderBy: { created_at: 'desc' },
     });
+
+    if (!activeEvent) {
+      activeEvent = await prisma.event.findFirst({
+        orderBy: { created_at: 'desc' },
+      });
+    }
 
     if (!activeEvent) {
       res.json({ event: null, results: [] });

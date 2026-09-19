@@ -80,7 +80,7 @@ const MainContent: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-3 text-[11px] text-slate-400">
-              <span>ClubGo Platform</span>
+              <span>© CogniCore Platform</span>
               <span>•</span>
               <span>Zero Data-Loss Engine</span>
               <span>•</span>

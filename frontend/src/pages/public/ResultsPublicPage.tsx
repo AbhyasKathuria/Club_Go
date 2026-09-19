@@ -23,7 +23,7 @@ import {
 
 export const ResultsPublicPage: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<PublicResultEntry[]>([]);
-  const [eventName, setEventName] = useState('ClubGo Tech & Innovation Summit');
+  const [eventName, setEventName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [teamSearch, setTeamSearch] = useState('');
   const [unlockedData, setUnlockedData] = useState<UnlockedResult | null>(null);
@@ -109,9 +109,13 @@ export const ResultsPublicPage: React.FC = () => {
           <span>Official Event Standings & Certificates</span>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-          {eventName}
-        </h1>
+        {eventName ? (
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            {eventName}
+          </h1>
+        ) : isLoading ? (
+          <div className="h-10 w-64 bg-slate-200/60 rounded-xl mx-auto animate-pulse" />
+        ) : null}
         <p className="text-sm text-slate-600 max-w-xl mx-auto">
           Tournament outcomes are publicly displayed with anonymous credentials. To access your team's achievement rank and download your official verifiable certificates, enter your registered Team Name below.
         </p>
@@ -462,7 +466,7 @@ export const ResultsPublicPage: React.FC = () => {
                   <div>
                     <div className="font-script text-lg text-slate-700 italic">Dr. Evelyn Reed</div>
                     <div className="h-px w-28 bg-slate-400 my-1" />
-                    <div className="text-[10px] font-bold text-slate-700">Faculty Coordinator</div>
+                    <div className="text-[10px] font-bold text-slate-700">Super Admin / Lead</div>
                     <div className="text-[9px] text-slate-400">Department of Student Affairs</div>
                   </div>
 

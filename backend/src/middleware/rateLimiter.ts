@@ -6,6 +6,7 @@ export const registrationRateLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
   message: {
     error: 'Too many registration requests from this IP. Please try again after a few minutes.',
   },
@@ -17,6 +18,7 @@ export const scanRateLimiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
   message: {
     error: 'Scanner rate limit exceeded. Please wait a moment.',
   },
@@ -28,6 +30,7 @@ export const generalApiLimiter = rateLimit({
   max: 600,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
   message: {
     error: 'Too many requests. Please slow down.',
   },

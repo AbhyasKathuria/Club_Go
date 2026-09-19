@@ -443,44 +443,50 @@ export const RegisterPage: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       
-      {/* Institutional Organizer Branding Banner: All 4 Logos in 1 Straight Row */}
+      {/* Institutional Organizer Branding Banner: 2 on top, 2 below on mobile; 1 row on desktop */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm mb-6">
-        <div className="flex items-center justify-between sm:justify-around gap-3 sm:gap-6 border-b border-slate-100 pb-4 overflow-x-auto">
-          {/* Presidency University */}
-          <img
-            src="/images/Presidency.png"
-            alt="Presidency University"
-            className="h-9 sm:h-10 w-auto object-contain flex-shrink-0"
-          />
+        <div className="grid grid-cols-2 sm:flex sm:items-center sm:justify-around gap-4 sm:gap-6 border-b border-slate-100 pb-4">
+          {/* Top-Left / Desktop 1: Presidency University */}
+          <div className="flex items-center justify-center">
+            <img
+              src="/images/Presidency.png"
+              alt="Presidency University"
+              className="h-8 sm:h-10 w-auto object-contain"
+            />
+          </div>
 
-          <div className="h-7 w-px bg-slate-200 flex-shrink-0" />
+          <div className="hidden sm:block h-7 w-px bg-slate-200 flex-shrink-0" />
 
-          {/* DSA NAAC A Accredited */}
-          <img
-            src="/images/DSA NAAC.png"
-            alt="DSA NAAC A Accredited"
-            className="h-8 sm:h-9 w-auto object-contain flex-shrink-0"
-          />
+          {/* Top-Right / Desktop 2: DSA NAAC A Accredited */}
+          <div className="flex items-center justify-center">
+            <img
+              src="/images/DSA NAAC.png"
+              alt="DSA NAAC A Accredited"
+              className="h-7 sm:h-9 w-auto object-contain"
+            />
+          </div>
 
-          <div className="h-7 w-px bg-slate-200 flex-shrink-0" />
+          <div className="hidden sm:block h-7 w-px bg-slate-200 flex-shrink-0" />
 
-          {/* Institution's Innovation Council */}
-          <img
-            src="/images/iiclogo.png"
-            alt="Institution's Innovation Council"
-            className="h-8 sm:h-9 w-auto object-contain flex-shrink-0"
-          />
+          {/* Bottom-Left / Desktop 3: Institution's Innovation Council */}
+          <div className="flex items-center justify-center">
+            <img
+              src="/images/iiclogo.png"
+              alt="Institution's Innovation Council"
+              className="h-8 sm:h-9 w-auto object-contain"
+            />
+          </div>
 
-          <div className="h-7 w-px bg-slate-200 flex-shrink-0" />
+          <div className="hidden sm:block h-7 w-px bg-slate-200 flex-shrink-0" />
 
-          {/* CogniCore Club */}
-          <div className="flex items-center space-x-2 flex-shrink-0">
+          {/* Bottom-Right / Desktop 4: CogniCore Club */}
+          <div className="flex items-center justify-center space-x-2">
             <img
               src="/images/CogniCore Logo.png"
               alt="CogniCore Club"
-              className="h-9 sm:h-10 w-auto object-contain"
+              className="h-10 sm:h-11 w-auto object-contain drop-shadow-sm"
             />
-            <span className="text-xs sm:text-sm font-black text-slate-800 tracking-tight whitespace-nowrap hidden md:inline-block">
+            <span className="text-xs sm:text-sm font-black text-slate-800 tracking-tight whitespace-nowrap">
               CogniCore Club
             </span>
           </div>

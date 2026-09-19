@@ -35,16 +35,16 @@ const MainContent: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 space-y-6">
           
           {/* Institutional Branding Strip */}
-          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 pb-6 border-b border-slate-100">
-            <div className="flex items-center space-x-2">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-6 sm:gap-10 pb-6 border-b border-slate-100 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center">
               <img
                 src="/images/Presidency.png"
                 alt="Presidency University"
-                className="h-8 sm:h-9 w-auto object-contain"
+                className="h-9 sm:h-10 w-auto object-contain"
               />
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center">
               <img
                 src="/images/DSA NAAC.png"
                 alt="DSA NAAC A Accredited"
@@ -52,19 +52,19 @@ const MainContent: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center">
               <img
                 src="/images/iiclogo.png"
                 alt="Institution's Innovation Council"
-                className="h-8 sm:h-9 w-auto object-contain"
+                className="h-9 sm:h-10 w-auto object-contain"
               />
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center">
               <img
                 src="/images/CogniCore Logo.png"
                 alt="CogniCore Club"
-                className="h-9 sm:h-10 w-auto object-contain"
+                className="h-12 sm:h-12 w-auto object-contain drop-shadow-sm"
               />
             </div>
           </div>

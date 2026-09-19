@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: clubgo-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        value: file:./prisma/dev.db
+      - key: CLIENT_URL
+        value: "*"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: STORAGE_PROVIDER
+        value: direct_url
+      - key: BACKUP_INTERVAL_HOURS
+        value: 6

@@ -65,10 +65,8 @@ echo    - Volunteer Mobile Scanner:  http://localhost:5173 (Click 'Volunteer Sca
 echo    - Super Admin Dashboard:    http://localhost:5173 (Click 'Admin Panel')
 echo    - Backend API & WebSockets:  http://localhost:5000
 echo.
-echo  Demo Credentials:
-echo    - Super Admin: admin@clubgo.edu   / Admin@123
-echo    - Faculty:     faculty@clubgo.edu / Faculty@123
-echo    - Volunteer:   volunteer@clubgo.edu / Volunteer@123
+echo  Super Admin Credentials:
+echo    - Super Admin: singhkaushal.2507@gmail.com / @Kaushal#^1012
 echo.
 echo  Press any key to exit this launcher window (servers will stay running).
 echo ======================================================================

@@ -169,7 +169,7 @@ export const SchoolConfigTab: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">Add University School / Faculty</h3>
+              <h3 className="text-base font-bold text-slate-900">Add University School</h3>
               <button
                 onClick={() => setShowAddModal(false)}
                 className="text-slate-400 hover:text-slate-600"
@@ -236,7 +236,7 @@ export const SchoolConfigTab: React.FC = () => {
                 className="p-3 rounded-xl text-white text-xs font-bold flex items-center justify-between shadow-sm"
                 style={{ backgroundColor: newColor }}
               >
-                <span>{newName || 'Sample Faculty Name'}</span>
+                <span>{newName || 'Sample School Name'}</span>
                 <span className="opacity-90">{newCode.toUpperCase() || 'CODE'}</span>
               </div>
 

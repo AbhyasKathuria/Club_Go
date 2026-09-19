@@ -42,9 +42,9 @@ export const AdminLoginPage: React.FC = () => {
             />
           </div>
 
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Admin & Faculty Portal</h2>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Admin Portal</h2>
           <p className="text-xs text-slate-500 mt-1">
-            Super Coordinator & Faculty Lead Administration
+            Super Coordinator Administration
           </p>
         </div>
 
@@ -66,7 +66,7 @@ export const AdminLoginPage: React.FC = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@clubgo.edu"
+                placeholder="singhkaushal.2507@gmail.com"
                 className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-500"
                 required
               />
@@ -99,30 +99,6 @@ export const AdminLoginPage: React.FC = () => {
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
-
-        <div className="mt-6 pt-6 border-t border-slate-100 flex items-center justify-between text-xs">
-          <button
-            type="button"
-            onClick={() => {
-              setEmail('admin@clubgo.edu');
-              setPassword('Admin@123');
-            }}
-            className="text-indigo-600 hover:text-indigo-800 font-semibold"
-          >
-            Demo Superadmin
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setEmail('faculty@clubgo.edu');
-              setPassword('Faculty@123');
-            }}
-            className="text-slate-500 hover:text-slate-800 font-semibold"
-          >
-            Demo Faculty
-          </button>
-        </div>
 
       </div>
     </div>

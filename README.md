@@ -51,8 +51,8 @@ A production-ready, full-stack event registration and real-time attendance manag
   - Scans are queued in browser `localStorage` if connection drops or network is congested.
   - "Sync Now" button flushes queued scans to `/api/attendance/sync-offline` upon reconnect.
 
-### 3. 🛡️ Super Admin & Faculty Command Center
-- Role-based login (`superadmin`, `faculty`).
+### 3. 🛡️ Super Admin Command Center
+- Role-based login (`superadmin`).
 - **Live Tabular Dashboard**:
   - Auto-updates in real time via Socket.io without browser reloads.
   - Filter by School, Attendance Status (All, Checked In, Pending), and search by name/email/token.
@@ -73,13 +73,11 @@ A production-ready, full-stack event registration and real-time attendance manag
 
 ---
 
-## Default Credentials (Demo Data)
+## Super Admin Credentials
 
 | Role | Email | Password |
 |---|---|---|
-| **Super Admin** | `admin@clubgo.edu` | `Admin@123` |
-| **Faculty Lead** | `faculty@clubgo.edu` | `Faculty@123` |
-| **Volunteer** | `volunteer@clubgo.edu` | `Volunteer@123` |
+| **Super Admin** | `singhkaushal.2507@gmail.com` | `@Kaushal#^1012` |
 
 ---
 

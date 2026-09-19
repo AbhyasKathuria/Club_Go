@@ -59,7 +59,7 @@ export const DEFAULT_FORM_CONFIG: FormConfig = {
   fields: {
     name: { label: 'Full Name', enabled: true, required: true, scope: 'participant' },
     roll_number: { label: 'University Roll Number', enabled: true, required: true, scope: 'participant' },
-    school: { label: 'School / Faculty', enabled: true, required: true, scope: 'team' },
+    school: { label: 'University School', enabled: true, required: true, scope: 'team' },
     email: { label: 'Personal Email ID', enabled: true, required: true, scope: 'participant' },
     university_email: { label: 'University Email ID', enabled: false, required: false, scope: 'participant' },
     phone: { label: 'Contact Phone Number', enabled: true, required: true, scope: 'participant' },
@@ -211,7 +211,7 @@ export const RegistrationFormBuilderTab: React.FC = () => {
   }> = [
     { key: 'name', icon: User, desc: 'Full student name of each participant' },
     { key: 'roll_number', icon: IdCard, desc: 'Official university roll number (e.g. 20231CSE0412)' },
-    { key: 'school', icon: Building2, desc: 'Department/Faculty of the participating team' },
+    { key: 'school', icon: Building2, desc: 'School / Department of the participating team' },
     { key: 'email', icon: Mail, desc: 'Personal primary email address' },
     { key: 'university_email', icon: GraduationCap, desc: 'Official student campus email (@university.edu)' },
     { key: 'phone', icon: Phone, desc: 'Contact phone / WhatsApp number for passes' },

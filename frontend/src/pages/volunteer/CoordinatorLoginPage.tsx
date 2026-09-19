@@ -25,12 +25,6 @@ export const CoordinatorLoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickCoordinatorFill = () => {
-    setUsername('coordinator1');
-    setPassword('20231CSE0001');
-    setError(null);
-  };
-
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-md">
@@ -118,17 +112,6 @@ export const CoordinatorLoginPage: React.FC = () => {
             <span>{isSubmitting ? 'Authenticating...' : 'Sign In to Scanner'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
-
-          {/* Quick Demo Fill */}
-          <div className="pt-2 border-t border-slate-100 text-center">
-            <button
-              type="button"
-              onClick={handleQuickCoordinatorFill}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 underline decoration-dotted"
-            >
-              Use Demo Student Co-ordinator (coordinator1 / 20231CSE0001)
-            </button>
-          </div>
         </form>
 
       </div>

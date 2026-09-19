@@ -243,7 +243,7 @@ export const ResultsConfigTab: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-3">Team & Faculty</th>
+                <th className="px-4 py-3">Team & School</th>
                 <th className="px-4 py-3">Roster</th>
                 <th className="px-4 py-3">Rank & Award</th>
                 <th className="px-4 py-3">Certificates Status</th>

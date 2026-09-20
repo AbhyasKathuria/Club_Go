@@ -35,17 +35,7 @@ async function ensureInitialData(): Promise<void> {
       },
     });
 
-    // 3. Clear demo registrations, participants, and logs for clean submission
-    await prisma.attendanceLog.deleteMany({});
-    await prisma.certificate.deleteMany({});
-    await prisma.eventResult.deleteMany({});
-    await prisma.participant.deleteMany({});
-    await prisma.team.deleteMany({});
-    await prisma.event.deleteMany({
-      where: { name: { contains: 'ClubGo Tech & Innovation' } },
-    });
-
-    // 4. Create/Upsert real Super Admin credentials
+    // 3. Create/Upsert real Super Admin credentials
     const realSuperAdminPassword = await bcrypt.hash('@Kaushal#^1012', 10);
     await prisma.user.upsert({
       where: { email: 'singhkaushal.2507@gmail.com' },

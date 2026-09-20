@@ -31,17 +31,7 @@ async function main() {
     },
   });
 
-  // 3. Clear demo teams and test logs for clean project submission
-  await prisma.attendanceLog.deleteMany({});
-  await prisma.certificate.deleteMany({});
-  await prisma.eventResult.deleteMany({});
-  await prisma.participant.deleteMany({});
-  await prisma.team.deleteMany({});
-  await prisma.event.deleteMany({
-    where: { name: { contains: 'ClubGo Tech & Innovation' } },
-  });
-
-  // 4. Seed Real Super Admin
+  // 3. Seed Real Super Admin
   const superAdminPassword = await bcrypt.hash('@Kaushal#^1012', 10);
 
   await prisma.user.upsert({
